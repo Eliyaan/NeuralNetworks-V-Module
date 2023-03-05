@@ -124,8 +124,9 @@ fn (mut nn NeuralNet) backprop(index int){
 	println("debut")
 	for i := nn.nb_hidden_layer; i>=0; i--{ 
 		hidd_lay := nn.layers_list[i]
+		println(i)
 		if i == nn.nb_hidden_layer{ 
-			println("last layer")
+			println("output layer")
 			//Weights
 			for l, mut outputlist in nn.weights_list[i][1]{
 				for j, mut weight_cost in outputlist{
@@ -165,12 +166,15 @@ fn (mut nn NeuralNet) backprop(index int){
 			//Weights
 			for l, mut outputlist in nn.weights_list[i][1]{
 				for j, mut weight_cost in outputlist{
-					weight_cost += nn.layers_list[i-1][3][j]*hidd_lay[2][l]*(hidd_lay[3][l]-nn.excpd_outputs[index][l])  // It's normal that we dont apply the dsig bcz already applied 
+					println(hidd_lay[4][l])
+					weight_cost += nn.layers_list[i-1][3][j]*hidd_lay[2][l]*hidd_lay[4][l]  // It's normal that we dont apply the dsig bcz already applied 
 				}
 			}
+			println("k")
 			for l, mut bias_cost in hidd_lay[1]{
 				bias_cost += hidd_lay[2][l]*(hidd_lay[3][l]-nn.excpd_outputs[index][l])   // It's normal that we dont apply the dsig bcz already applied 
 			}
+			println("notbad")
 			for l, mut hidden_cost in hidd_lay[4]{
 				for j in 0..nn.nb_hidden_neurones[nn.nb_hidden_layer]{
 					hidden_cost += nn.weights_list[nn.nb_hidden_layer][0][j][l]*nn.layers_list[nn.nb_hidden_layer][2][j]*(nn.layers_list[nn.nb_hidden_layer][3][j]-nn.excpd_outputs[index][j])  // It's normal that we dont apply the dsig bcz already applied 
