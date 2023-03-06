@@ -10,6 +10,8 @@ struct NeuralNet{
 	nb_hidden_layer int
 	nb_hidden_neurones []int 
 	nb_outputs int
+	activ_func fn(f64) f64
+	deriv_activ_func fn(f64) f64
 
 	shuffle_dataset bool
 	print_epoch int 
@@ -42,13 +44,13 @@ fn (mut nn NeuralNet) set_rd_wb_values(){
 	}
 }
 
-// fn relu(value f64) f64{
-// 	if value < 0{
-// 		return 0
-// 	}else{
-// 		return value
-// 	}
-// }
+fn relu(value f64) f64{
+	return if value<0{0}else{value}
+}
+
+fn drelu(value f64) f64{
+	return if value<0{0}else{1}
+}
 
 fn sigmoid(value f64) f64{
 	return 1 / (1 + m.exp(-value))
@@ -85,7 +87,7 @@ fn (mut nn NeuralNet) forward_prop(index int){
 			}
 			
 			nactiv += hidd_lay[0][j]  // Ajout du bias
-			hidd_lay[3][j] = sigmoid(nactiv)  //activation function
+			hidd_lay[3][j] = nn.activ_func(nactiv)  //activation function
 		}
 	}
 
@@ -114,7 +116,7 @@ fn (mut nn NeuralNet) backprop(index int){
 	//Dsig nactiv all neurons
 	for mut hidden_lay in nn.layers_list{
 		for mut elem in hidden_lay[2]{
-			elem = dsig(elem)
+			elem = nn.deriv_activ_func(elem)
 		}
 	}
 	//Reverif toute la backprop pour s'assurer qu'elle soit dans le bon sens avec les bons trucs car c pas ca x)
@@ -124,17 +126,17 @@ fn (mut nn NeuralNet) backprop(index int){
 			//Weights
 			for l, mut outputlist in nn.weights_list[i][1]{
 				for j, mut weight_cost in outputlist{
-					weight_cost += nn.layers_list[i-1][3][j]*hidd_lay[2][l]*(hidd_lay[3][l]-nn.excpd_outputs[index][l])  // It's normal that we dont apply the dsig bcz already applied 
+					weight_cost += nn.layers_list[i-1][3][j]*hidd_lay[2][l]*(hidd_lay[3][l]-nn.excpd_outputs[index][l]) 
 				}
 			}
 			for l, mut bias_cost in hidd_lay[1]{
-				bias_cost += hidd_lay[2][l]*(hidd_lay[3][l]-nn.excpd_outputs[index][l])   // It's normal that we dont apply the dsig bcz already applied 
+				bias_cost += hidd_lay[2][l]*(hidd_lay[3][l]-nn.excpd_outputs[index][l]) 
 			}
 		}else if i == 0{
 			if nn.nb_hidden_neurones.len > 1{
 				for l, mut hidden_cost in hidd_lay[4]{
 					for j in 0..nn.nb_hidden_neurones[1]{//a changer pour I+1 pour le reste + faire un condi si au moins 1
-						hidden_cost += nn.weights_list[1][0][j][l]*nn.layers_list[1][2][j]*nn.layers_list[1][4][j]  // It's normal that we dont apply the dsig bcz already applied 
+						hidden_cost += nn.weights_list[1][0][j][l]*nn.layers_list[1][2][j]*nn.layers_list[1][4][j]
 					}
 				}
 			}else{
@@ -147,41 +149,41 @@ fn (mut nn NeuralNet) backprop(index int){
 			//Weights
 			for l, mut outputlist in nn.weights_list[i][1]{
 				for j, mut weight_cost in outputlist{
-					weight_cost += nn.inputs[index][j]*hidd_lay[2][l]*hidd_lay[4][l]  // It's normal that we dont apply the dsig bcz already applied 
+					weight_cost += nn.inputs[index][j]*hidd_lay[2][l]*hidd_lay[4][l] 
 				}
 			}
 			for l, mut bias_cost in hidd_lay[1]{
-				bias_cost += hidd_lay[2][l]*hidd_lay[4][l]   // It's normal that we dont apply the dsig bcz already applied 
+				bias_cost += hidd_lay[2][l]*hidd_lay[4][l]
 			}					
 		}else if i == nn.nb_hidden_layer-1{
 			for l, mut hidden_cost in hidd_lay[4]{
 				for j in 0..nn.layers_list[nn.nb_hidden_layer][0].len{//Len of last layer
-					hidden_cost += nn.weights_list[nn.nb_hidden_layer][0][j][l]*nn.layers_list[nn.nb_hidden_layer][2][j]*(nn.layers_list[nn.nb_hidden_layer][3][j]-nn.excpd_outputs[index][j])  // It's normal that we dont apply the dsig bcz already applied 
+					hidden_cost += nn.weights_list[nn.nb_hidden_layer][0][j][l]*nn.layers_list[nn.nb_hidden_layer][2][j]*(nn.layers_list[nn.nb_hidden_layer][3][j]-nn.excpd_outputs[index][j])
 				}
 			}
 			//Weights
 			for l, mut outputlist in nn.weights_list[i][1]{
 				for j, mut weight_cost in outputlist{
-					weight_cost += nn.layers_list[i-1][3][j]*hidd_lay[2][l]*hidd_lay[4][l]  // It's normal that we dont apply the dsig bcz already applied 
+					weight_cost += nn.layers_list[i-1][3][j]*hidd_lay[2][l]*hidd_lay[4][l]
 				}
 			}
 			for l, mut bias_cost in hidd_lay[1]{
-				bias_cost += hidd_lay[2][l]*hidd_lay[4][l]   // It's normal that we dont apply the dsig bcz already applied 
+				bias_cost += hidd_lay[2][l]*hidd_lay[4][l]
 			}
 		}else{
 			for l, mut hidden_cost in hidd_lay[4]{
 				for j in 0..nn.nb_hidden_neurones[i+1]{
-					hidden_cost += nn.weights_list[i+1][0][j][l]*nn.layers_list[i+1][2][j]*nn.layers_list[i+1][4][j]  // It's normal that we dont apply the dsig bcz already applied 
+					hidden_cost += nn.weights_list[i+1][0][j][l]*nn.layers_list[i+1][2][j]*nn.layers_list[i+1][4][j]
 				}
 			}
 			//Weights
 			for k, mut outputlist in nn.weights_list[i][1]{
 				for j, mut weight_cost in outputlist{
-					weight_cost += nn.layers_list[i-1][3][j]*hidd_lay[2][k]*hidd_lay[4][k]  // It's normal that we dont apply the dsig bcz already applied 
+					weight_cost += nn.layers_list[i-1][3][j]*hidd_lay[2][k]*hidd_lay[4][k]
 				}
 			}
 			for l, mut bias_cost in hidd_lay[1]{
-				bias_cost += hidd_lay[2][l]*hidd_lay[4][l]   // It's normal that we dont apply the dsig bcz already applied 
+				bias_cost += hidd_lay[2][l]*hidd_lay[4][l]
 			}
 		}
 	}
@@ -255,6 +257,7 @@ fn (mut nn NeuralNet) init(){
 }
 
 fn (mut nn NeuralNet) train(nb_epochs u64){
+	println(nn.deriv_activ_func(23.5))
 	for epoch in 0..nb_epochs{
 		if nn.shuffle_dataset{
 			nn.randomise_i_exp_o()
@@ -285,7 +288,7 @@ fn (mut nn NeuralNet) train(nb_epochs u64){
 }
 
 fn main(){
-	nb_epochs := 100000
+	nb_epochs := 10000
 	mut neunet := NeuralNet{		
 								learning_rate: 0.3
 								inputs: [[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]]
@@ -296,6 +299,8 @@ fn main(){
 								nb_outputs: 1
 								shuffle_dataset: true
 								print_epoch: 10000
+								activ_func: sigmoid
+								deriv_activ_func: dsig
 							}
 	neunet.init()
 	neunet.train(u64(nb_epochs))
