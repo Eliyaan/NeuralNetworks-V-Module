@@ -44,18 +44,22 @@ fn (mut nn NeuralNet) set_rd_wb_values(){
 	}
 }
 
+[inline]
 fn relu(value f64) f64{
 	return if value<0{0}else{value}
 }
 
+[inline]
 fn drelu(value f64) f64{
 	return if value<0{0}else{1}
 }
 
+[inline]
 fn sigmoid(value f64) f64{
 	return 1 / (1 + m.exp(-value))
 }
 
+[inline]
 fn dsig(value f64) f64{
 	sigx := sigmoid(value)
 	return sigx*(1 - sigx)
@@ -87,7 +91,7 @@ fn (mut nn NeuralNet) forward_prop(index int){
 			}
 			
 			nactiv += hidd_lay[0][j]  // Ajout du bias
-			hidd_lay[3][j] = nn.activ_func(nactiv)  //activation function
+			hidd_lay[3][j] = nn.activ_func(*nactiv)  //activation function
 		}
 	}
 
@@ -116,7 +120,7 @@ fn (mut nn NeuralNet) backprop(index int){
 	//Dsig nactiv all neurons
 	for mut hidden_lay in nn.layers_list{
 		for mut elem in hidden_lay[2]{
-			elem = nn.deriv_activ_func(elem)
+			elem = nn.deriv_activ_func(*elem)
 		}
 	}
 	//Reverif toute la backprop pour s'assurer qu'elle soit dans le bon sens avec les bons trucs car c pas ca x)
@@ -257,7 +261,6 @@ fn (mut nn NeuralNet) init(){
 }
 
 fn (mut nn NeuralNet) train(nb_epochs u64){
-	println(nn.deriv_activ_func(23.5))
 	for epoch in 0..nb_epochs{
 		if nn.shuffle_dataset{
 			nn.randomise_i_exp_o()
@@ -288,7 +291,7 @@ fn (mut nn NeuralNet) train(nb_epochs u64){
 }
 
 fn main(){
-	nb_epochs := 10000
+	nb_epochs := 1000
 	mut neunet := NeuralNet{		
 								learning_rate: 0.3
 								inputs: [[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]]
