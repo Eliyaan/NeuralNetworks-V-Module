@@ -1,9 +1,9 @@
-//module preceptron
+module preceptron
 import rand as rd
 import math as m
 
 
-struct NeuralNet{
+pub struct NeuralNet{
 	//Consts
 	learning_rate f64
 	nb_inputs int 
@@ -235,7 +235,7 @@ fn (mut nn NeuralNet) randomise_i_exp_o(){
 	}
 }
 
-fn (mut nn NeuralNet) init(){
+pub fn (mut nn NeuralNet) init(){
 	nn.weights_list = [][][][]f64{len:nn.nb_hidden_layer+1, init:[][][]f64{len:2, init:[][]f64{}}}
 	nn.layers_list = [][][]f64{len:nn.nb_hidden_layer+1, init:[][]f64{len:5, init:[]f64{}}}
 	nn.glob_output = [][]f64{len:4, init:[]f64{len:nn.nb_inputs}}
@@ -270,7 +270,7 @@ fn (mut nn NeuralNet) init(){
 	nn.set_rd_wb_values()
 }
 
-fn (mut nn NeuralNet) train(nb_epochs u64){
+pub fn (mut nn NeuralNet) train(nb_epochs u64){
 	for epoch in 0..nb_epochs{
 		if nn.shuffle_dataset{
 			nn.randomise_i_exp_o()
@@ -300,21 +300,3 @@ fn (mut nn NeuralNet) train(nb_epochs u64){
 	println('____________________________________________________________\nFinal Results: \nCost: ${nn.layers_list[nn.nb_hidden_layer][4]} \nOutputs: $nn.glob_output \nExpected Outputs: $nn.excpd_outputs')
 }
 
-fn main(){
-	nb_epochs := 100000
-	mut neunet := NeuralNet{		
-								learning_rate: 0.1
-								inputs: [[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]]
-								excpd_outputs: [[0.0], [0.0], [0.0], [1.0]]
-								nb_inputs: 2 
-								nb_hidden_layer: 1
-								nb_hidden_neurones: [3] 
-								nb_outputs: 1
-								shuffle_dataset: true
-								print_epoch: 10000
-								activ_func: leaky_relu
-								deriv_activ_func: dleaky_relu
-							}
-	neunet.init()
-	neunet.train(u64(nb_epochs))
-}
