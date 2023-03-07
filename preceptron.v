@@ -51,7 +51,17 @@ fn relu(value f64) f64{
 
 [inline]
 fn drelu(value f64) f64{
-	return if value<0{0}else{1}
+	return if value<0{0.0}else{1.0}
+}
+
+[inline]
+fn leaky_relu(value f64) f64{
+	return if value<0{value*0.01}else{value}
+}
+
+[inline]
+fn dleaky_relu(value f64) f64{
+	return if value<0{0.01}else{1.0}
 }
 
 [inline]
@@ -281,7 +291,7 @@ fn (mut nn NeuralNet) train(nb_epochs u64){
 			nn.glob_output[i] = nn.layers_list[nn.nb_hidden_layer][3]
 		}
 		if nn.print_epoch > 0{
-			if epoch%10000 == 0{
+			if epoch%u64(nn.print_epoch) == 0{
 				println('\nEpoch: $epoch Cost: ${nn.layers_list[nn.nb_hidden_layer][4]} \nOutputs: $nn.glob_output \nExpected Outputs: $nn.excpd_outputs')
 			}
 		}
@@ -291,19 +301,19 @@ fn (mut nn NeuralNet) train(nb_epochs u64){
 }
 
 fn main(){
-	nb_epochs := 1000
+	nb_epochs := 100000
 	mut neunet := NeuralNet{		
-								learning_rate: 0.3
+								learning_rate: 0.1
 								inputs: [[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]]
 								excpd_outputs: [[0.0], [0.0], [0.0], [1.0]]
 								nb_inputs: 2 
 								nb_hidden_layer: 1
-								nb_hidden_neurones: [10] 
+								nb_hidden_neurones: [3] 
 								nb_outputs: 1
 								shuffle_dataset: true
 								print_epoch: 10000
-								activ_func: sigmoid
-								deriv_activ_func: dsig
+								activ_func: leaky_relu
+								deriv_activ_func: dleaky_relu
 							}
 	neunet.init()
 	neunet.train(u64(nb_epochs))
