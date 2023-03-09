@@ -1,14 +1,12 @@
 module main
 import preceptron as p
-import toml
 
 
 /*
 Save le meilleur nn, load un nn
-
+pouvoir test 1 seul truc
 */
 
-const toml_text = '[32.43, -24.24]'
 
 
 fn main(){

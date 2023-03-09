@@ -242,49 +242,77 @@ fn (mut nn NeuralNet) randomise_i_exp_o(){
 }
 
 pub fn (mut nn NeuralNet) init(){
-	if load_path != ""{
+	if nn.load_path != ""{
 		file := toml.parse_file(nn.save_path) or {panic(err)}
 		nn.best_cost = file.value("cost").f64()
 		base_weights_list := file.value("weights").array()
+		base_layers_list := file.value("layers").array()
+		mut base_layers_list_good := [][][]f64{}
+		mut base_weights_listgood := [][][][]f64{}
+		for a, layer in base_weights_list{
+			base_weights_listgood << [][][]f64{}
+			for b, flist in layer.array(){
+				base_weights_listgood[a] << [][]f64{}
+				for c, maybeline in flist.array(){
+					base_weights_listgood[a][b] << []f64{}
+					for maybecoll in maybeline.array(){
+						base_weights_listgood[a][b][c] << maybecoll.f64()
+					}
+				}
+			}
+		}
+		for a, layer in base_layers_list{
+			base_layers_list_good << [][]f64{}
+			for b, flist in layer.array(){
+				base_layers_list_good[a] << []f64{}
+				for value in flist.array(){
+					base_layers_list_good[a][b] << value.f64()
+				}
+			}
+		}
+		nn.layers_list = base_layers_list_good
+		nn.weights_list = base_weights_listgood
+		nn.glob_output = [][]f64{len:4, init:[]f64{len:nn.nb_inputs}}
 	}else{
+		nn.weights_list = [][][][]f64{len:nn.nb_hidden_layer+1, init:[][][]f64{len:2, init:[][]f64{}}}
+		nn.layers_list = [][][]f64{len:nn.nb_hidden_layer+1, init:[][]f64{len:5, init:[]f64{}}}
+		nn.glob_output = [][]f64{len:4, init:[]f64{len:nn.nb_inputs}}
+		for i in 0..nn.nb_hidden_layer+1{
+			if i == 0{
+				nn.weights_list[i][0] = [][]f64{len:nn.nb_hidden_neurones[0], init:[]f64{len:nn.nb_inputs}}
+				nn.weights_list[i][1] = [][]f64{len:nn.nb_hidden_neurones[0], init:[]f64{len:nn.nb_inputs}}
+			}
+			else if i == nn.nb_hidden_layer{
+				nn.weights_list[i][0] = [][]f64{len:nn.nb_outputs, init:[]f64{len:nn.nb_hidden_neurones[i-1]}}
+				nn.weights_list[i][1] = [][]f64{len:nn.nb_outputs, init:[]f64{len:nn.nb_hidden_neurones[i-1]}}
+			}else{
+				nn.weights_list[i][0] = [][]f64{len:nn.nb_hidden_neurones[i], init:[]f64{len:nn.nb_hidden_neurones[i-1]}}
+				nn.weights_list[i][1] = [][]f64{len:nn.nb_hidden_neurones[i], init:[]f64{len:nn.nb_hidden_neurones[i-1]}}
+			}
+		}
+		for i in 0..nn.nb_hidden_layer+1{
+			if i == nn.nb_hidden_layer{
+				nn.layers_list[i][0] = []f64{len:nn.nb_outputs}
+				nn.layers_list[i][1] = []f64{len:nn.nb_outputs}
+				nn.layers_list[i][2] = []f64{len:nn.nb_outputs}
+				nn.layers_list[i][3] = []f64{len:nn.nb_outputs}
+				nn.layers_list[i][4] = []f64{len:nn.nb_outputs}
+			}else{
+				nn.layers_list[i][0] = []f64{len:nn.nb_hidden_neurones[i]}
+				nn.layers_list[i][1] = []f64{len:nn.nb_hidden_neurones[i]}
+				nn.layers_list[i][2] = []f64{len:nn.nb_hidden_neurones[i]}
+				nn.layers_list[i][3] = []f64{len:nn.nb_hidden_neurones[i]}
+				nn.layers_list[i][4] = []f64{len:nn.nb_hidden_neurones[i]}
+			}
+		}
+		nn.set_rd_wb_values()
 		cost := (toml.parse_file(nn.save_path) or {panic(err)}).value("cost").f64()
 		if cost != 0.0{
 			nn.best_cost = cost
 		}
+		unsafe{free(cost)}
 	}
-	unsafe{free(cost)}
-	nn.weights_list = [][][][]f64{len:nn.nb_hidden_layer+1, init:[][][]f64{len:2, init:[][]f64{}}}
-	nn.layers_list = [][][]f64{len:nn.nb_hidden_layer+1, init:[][]f64{len:5, init:[]f64{}}}
-	nn.glob_output = [][]f64{len:4, init:[]f64{len:nn.nb_inputs}}
-	for i in 0..nn.nb_hidden_layer+1{
-		if i == 0{
-			nn.weights_list[i][0] = [][]f64{len:nn.nb_hidden_neurones[0], init:[]f64{len:nn.nb_inputs}}
-			nn.weights_list[i][1] = [][]f64{len:nn.nb_hidden_neurones[0], init:[]f64{len:nn.nb_inputs}}
-		}
-		else if i == nn.nb_hidden_layer{
-			nn.weights_list[i][0] = [][]f64{len:nn.nb_outputs, init:[]f64{len:nn.nb_hidden_neurones[i-1]}}
-			nn.weights_list[i][1] = [][]f64{len:nn.nb_outputs, init:[]f64{len:nn.nb_hidden_neurones[i-1]}}
-		}else{
-			nn.weights_list[i][0] = [][]f64{len:nn.nb_hidden_neurones[i], init:[]f64{len:nn.nb_hidden_neurones[i-1]}}
-			nn.weights_list[i][1] = [][]f64{len:nn.nb_hidden_neurones[i], init:[]f64{len:nn.nb_hidden_neurones[i-1]}}
-		}
-	}
-	for i in 0..nn.nb_hidden_layer+1{
-		if i == nn.nb_hidden_layer{
-			nn.layers_list[i][0] = []f64{len:nn.nb_outputs}
-			nn.layers_list[i][1] = []f64{len:nn.nb_outputs}
-			nn.layers_list[i][2] = []f64{len:nn.nb_outputs}
-			nn.layers_list[i][3] = []f64{len:nn.nb_outputs}
-			nn.layers_list[i][4] = []f64{len:nn.nb_outputs}
-		}else{
-			nn.layers_list[i][0] = []f64{len:nn.nb_hidden_neurones[i]}
-			nn.layers_list[i][1] = []f64{len:nn.nb_hidden_neurones[i]}
-			nn.layers_list[i][2] = []f64{len:nn.nb_hidden_neurones[i]}
-			nn.layers_list[i][3] = []f64{len:nn.nb_hidden_neurones[i]}
-			nn.layers_list[i][4] = []f64{len:nn.nb_hidden_neurones[i]}
-		}
-	}
-	nn.set_rd_wb_values()
+	
 }
 
 pub fn (mut nn NeuralNet) train(nb_epochs u64){
