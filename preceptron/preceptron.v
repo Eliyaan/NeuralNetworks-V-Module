@@ -25,11 +25,12 @@ mut:
 	weights_list [][][][]f64
 	layers_list [][][]f64  // bias, bias cost, nactiv, output(activ), cost
 	glob_output [][]f64
+	global_cost f64
 	
 	inputs [][]f64 
 	excpd_outputs [][]f64  // first : prob for 0 ; sec : prob for 1
 
-	best_cost f64 = 100000000
+	best_cost f64 = 100000000000
 }
 
 fn (mut nn NeuralNet) set_rd_wb_values(){
@@ -113,6 +114,9 @@ fn (mut nn NeuralNet) forward_prop(index int){
 
 	for i in 0..nn.nb_outputs{
 		nn.layers_list[nn.nb_hidden_layer][4][i] += m.pow(nn.layers_list[nn.nb_hidden_layer][3][i] - excpd_outputs[i], 2)/2  //this is just to have the result I think
+	}	
+	for cost in nn.layers_list[nn.nb_hidden_layer][4]{
+		nn.global_cost += cost
 	}
 }
 
@@ -317,6 +321,9 @@ pub fn (mut nn NeuralNet) init(){
 
 pub fn (mut nn NeuralNet) train(nb_epochs u64){
 	for epoch in 0..nb_epochs{
+		if epoch != 0{
+			nn.apply_delta()
+		}
 		if nn.shuffle_dataset{
 			nn.randomise_i_exp_o()
 		}
@@ -329,6 +336,7 @@ pub fn (mut nn NeuralNet) train(nb_epochs u64){
 			hidd_lay[1] = []f64{len:hidd_lay[1].len}
 			hidd_lay[4] = []f64{len:hidd_lay[4].len}
 		}
+		nn.global_cost = 0.0
 		for i, _ in nn.inputs{
 			nn.reset()
 			nn.forward_prop(i)
@@ -337,16 +345,15 @@ pub fn (mut nn NeuralNet) train(nb_epochs u64){
 		}
 		if nn.print_epoch > 0{
 			if epoch%u64(nn.print_epoch) == 0{
-				println('\nEpoch: $epoch Cost: ${nn.layers_list[nn.nb_hidden_layer][4]} \nOutputs: $nn.glob_output \nExpected Outputs: $nn.excpd_outputs')
+				println('\nEpoch: $epoch Global Cost: ${nn.global_cost} \nOutputs: $nn.glob_output \nExpected Outputs: $nn.excpd_outputs')
 			}
 		}
-		if nn.best_cost/nn.layers_list[nn.nb_hidden_layer][4][0] > 1.001{
-			file := "cost=${nn.layers_list[nn.nb_hidden_layer][4][0]}\nweights=${nn.weights_list}\nlayers=${nn.layers_list}"
+		if nn.best_cost/nn.global_cost > 1.0001{
+			file := "cost=${nn.global_cost}\nweights=${nn.weights_list}\nlayers=${nn.layers_list}"
 			os.write_file(nn.save_path, file) or {panic(err)}
 			nn.best_cost = nn.layers_list[nn.nb_hidden_layer][4][0]
 		}
-		nn.apply_delta()
 	}
-	println('____________________________________________________________\nFinal Results: \nCost: ${nn.layers_list[nn.nb_hidden_layer][4]} \nOutputs: $nn.glob_output \nExpected Outputs: $nn.excpd_outputs')
+	println('____________________________________________________________\nFinal Results: \nCost: ${nn.global_cost} \nOutputs: $nn.glob_output \nExpected Outputs: $nn.excpd_outputs')
 }
 
