@@ -13,7 +13,7 @@ est ce que le cout marche pour plusieurs sorties T-T
 fn main(){
 	nb_epochs := 1000
 	mut neunet := p.NeuralNet{		
-								learning_rate: 0.3
+								learning_rate: 0.01
 								inputs: [[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]]
 								excpd_outputs: [[0.0], [0.0], [0.0], [1.0]]
 								nb_inputs: 2 
@@ -31,5 +31,4 @@ fn main(){
 		neunet.init()
 		neunet.train(u64(nb_epochs))
 	}
-	neunet.init()
 }
