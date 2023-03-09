@@ -24,13 +24,9 @@ fn main(){
 								save_path: "preceptron_module/preceptron_v_module/saved_nn.toml"
 								load_path: "preceptron_module/preceptron_v_module/saved_nn.toml"
 							}
-	for _ in 0..1000{	
+	for _ in 0..10{	
 		neunet.init()
 		neunet.train(u64(nb_epochs))
 	}
 	neunet.init()
-	neunet.test_value([0.0, 0.0])
-	neunet.test_value([0.0, 1.0])
-	neunet.test_value([1.0, 0.0])
-	neunet.test_value([1.0, 1.0])
 }
