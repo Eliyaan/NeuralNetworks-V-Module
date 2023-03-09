@@ -1,6 +1,8 @@
 module preceptron
 import rand as rd
 import math as m
+import os
+import toml
 
 
 pub struct NeuralNet{
@@ -14,7 +16,10 @@ pub struct NeuralNet{
 	deriv_activ_func fn(f64) f64
 
 	shuffle_dataset bool
-	print_epoch int 
+	print_epoch int
+	
+	save_path string
+	load_path string 
 
 mut:
 	weights_list [][][][]f64
@@ -24,6 +29,7 @@ mut:
 	inputs [][]f64 
 	excpd_outputs [][]f64  // first : prob for 0 ; sec : prob for 1
 
+	best_cost f64 = 100000000
 }
 
 fn (mut nn NeuralNet) set_rd_wb_values(){
@@ -236,6 +242,17 @@ fn (mut nn NeuralNet) randomise_i_exp_o(){
 }
 
 pub fn (mut nn NeuralNet) init(){
+	if load_path != ""{
+		file := toml.parse_file(nn.save_path) or {panic(err)}
+		nn.best_cost = file.value("cost").f64()
+		base_weights_list := file.value("weights").array()
+	}else{
+		cost := (toml.parse_file(nn.save_path) or {panic(err)}).value("cost").f64()
+		if cost != 0.0{
+			nn.best_cost = cost
+		}
+	}
+	unsafe{free(cost)}
 	nn.weights_list = [][][][]f64{len:nn.nb_hidden_layer+1, init:[][][]f64{len:2, init:[][]f64{}}}
 	nn.layers_list = [][][]f64{len:nn.nb_hidden_layer+1, init:[][]f64{len:5, init:[]f64{}}}
 	nn.glob_output = [][]f64{len:4, init:[]f64{len:nn.nb_inputs}}
@@ -294,6 +311,11 @@ pub fn (mut nn NeuralNet) train(nb_epochs u64){
 			if epoch%u64(nn.print_epoch) == 0{
 				println('\nEpoch: $epoch Cost: ${nn.layers_list[nn.nb_hidden_layer][4]} \nOutputs: $nn.glob_output \nExpected Outputs: $nn.excpd_outputs')
 			}
+		}
+		if nn.best_cost/nn.layers_list[nn.nb_hidden_layer][4][0] > 1.001{
+			file := "cost=${nn.layers_list[nn.nb_hidden_layer][4][0]}\nweights=${nn.weights_list}\nlayers=${nn.layers_list}"
+			os.write_file(nn.save_path, file) or {panic(err)}
+			nn.best_cost = nn.layers_list[nn.nb_hidden_layer][4][0]
 		}
 		nn.apply_delta()
 	}

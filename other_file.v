@@ -1,8 +1,18 @@
 module main
 import preceptron as p
+import toml
+
+
+/*
+Save le meilleur nn, load un nn
+
+*/
+
+const toml_text = '[32.43, -24.24]'
+
 
 fn main(){
-	nb_epochs := 10000
+	nb_epochs := 1000
 	mut neunet := p.NeuralNet{		
 								learning_rate: 0.3
 								inputs: [[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]]
@@ -15,6 +25,8 @@ fn main(){
 								print_epoch: 10000
 								activ_func: p.sigmoid
 								deriv_activ_func: p.dsig
+								save_path: "preceptron_module/preceptron_v_module/saved_nn.toml"
+								load_path: "preceptron_module/preceptron_v_module/saved_nn.toml"
 							}
 	neunet.init()
 	neunet.train(u64(nb_epochs))
