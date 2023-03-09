@@ -113,7 +113,7 @@ fn (mut nn NeuralNet) forward_prop(index int){
 	}
 
 	for i in 0..nn.nb_outputs{
-		nn.layers_list[nn.nb_hidden_layer][4][i] += m.pow(nn.layers_list[nn.nb_hidden_layer][3][i] - excpd_outputs[i], 2)/2  //this is just to have the result I think
+		nn.layers_list[nn.nb_hidden_layer][4][i] += m.pow(nn.layers_list[nn.nb_hidden_layer][3][i] - excpd_outputs[i], 2)/2
 	}	
 	for cost in nn.layers_list[nn.nb_hidden_layer][4]{
 		nn.global_cost += cost
@@ -124,11 +124,13 @@ fn (mut nn NeuralNet) reset(){
 	for i, mut hidden_lay in nn.layers_list{
 		if i == nn.nb_hidden_layer{
 			hidden_lay[3] = []f64{len:nn.nb_outputs}
+			hidden_lay[2] = []f64{len:nn.nb_outputs}
 			if i < nn.nb_hidden_layer{
 				hidden_lay[4] = []f64{len:nn.nb_outputs}
 			}
 		}else{
 			hidden_lay[3] = []f64{len:nn.nb_hidden_neurones[i]}
+			hidden_lay[2] = []f64{len:nn.nb_hidden_neurones[i]}
 			if i < nn.nb_hidden_layer{
 				hidden_lay[4] = []f64{len:nn.nb_hidden_neurones[i]}
 			}
@@ -276,11 +278,11 @@ pub fn (mut nn NeuralNet) init(){
 		}
 		nn.layers_list = base_layers_list_good
 		nn.weights_list = base_weights_listgood
-		nn.glob_output = [][]f64{len:4, init:[]f64{len:nn.nb_inputs}}
+		nn.glob_output = [][]f64{len:nn.excpd_outputs.len, init:[]f64{len:nn.nb_inputs}}
 	}else{
 		nn.weights_list = [][][][]f64{len:nn.nb_hidden_layer+1, init:[][][]f64{len:2, init:[][]f64{}}}
 		nn.layers_list = [][][]f64{len:nn.nb_hidden_layer+1, init:[][]f64{len:5, init:[]f64{}}}
-		nn.glob_output = [][]f64{len:4, init:[]f64{len:nn.nb_inputs}}
+		nn.glob_output = [][]f64{len:nn.excpd_outputs.len, init:[]f64{len:nn.nb_inputs}}
 		for i in 0..nn.nb_hidden_layer+1{
 			if i == 0{
 				nn.weights_list[i][0] = [][]f64{len:nn.nb_hidden_neurones[0], init:[]f64{len:nn.nb_inputs}}
@@ -314,12 +316,40 @@ pub fn (mut nn NeuralNet) init(){
 		if cost != 0.0{
 			nn.best_cost = cost
 		}
-		unsafe{free(cost)}
 	}
 	
 }
 
+fn (mut nn NeuralNet) test_fprop(inputs []f64){
+	for i, mut hidd_lay in nn.layers_list{
+		for j, mut nactiv in hidd_lay[2]{
+			if i == 0{
+				for k, elem in inputs{  // Pour chaque input
+					nactiv += nn.weights_list[i][0][j][k] * elem //Le bon weight fois le bon input
+				}
+			}else{
+				for k, elem in nn.layers_list[i-1][3]{  // Pour chaque input
+					nactiv += nn.weights_list[i][0][j][k] * elem //Le bon weight fois le bon input
+				}
+			}
+			
+			nactiv += hidd_lay[0][j]  // Ajout du bias
+			hidd_lay[3][j] = nn.activ_func(*nactiv)  //activation function
+		}
+	}
+	println("Tested Inputs: ${inputs}\nTested Output: ${nn.layers_list[nn.nb_hidden_layer][3]} ")	
+}
+
+pub fn (mut nn NeuralNet) test_value(value []f64){
+	nn.reset()
+	nn.test_fprop(value)
+}
+
 pub fn (mut nn NeuralNet) train(nb_epochs u64){
+	mut need_to_save := false
+	mut cost_to_save := 0.0
+	mut weights_to_save := [][][][]f64{}
+	mut layers_to_save := [][][]f64{}
 	for epoch in 0..nb_epochs{
 		if epoch != 0{
 			nn.apply_delta()
@@ -348,12 +378,18 @@ pub fn (mut nn NeuralNet) train(nb_epochs u64){
 				println('\nEpoch: $epoch Global Cost: ${nn.global_cost} \nOutputs: $nn.glob_output \nExpected Outputs: $nn.excpd_outputs')
 			}
 		}
-		if nn.best_cost/nn.global_cost > 1.0001{
-			file := "cost=${nn.global_cost}\nweights=${nn.weights_list}\nlayers=${nn.layers_list}"
-			os.write_file(nn.save_path, file) or {panic(err)}
-			nn.best_cost = nn.layers_list[nn.nb_hidden_layer][4][0]
+		if nn.best_cost/nn.global_cost > 1.0{
+			need_to_save = true
+			cost_to_save = nn.global_cost
+			weights_to_save = nn.weights_list.clone()
+			layers_to_save = nn.layers_list.clone()
+			nn.best_cost = nn.global_cost
 		}
 	}
 	println('____________________________________________________________\nFinal Results: \nCost: ${nn.global_cost} \nOutputs: $nn.glob_output \nExpected Outputs: $nn.excpd_outputs')
+	if need_to_save{
+		file := "cost=${cost_to_save}\nweights=${weights_to_save}\nlayers=${layers_to_save}"
+		os.write_file(nn.save_path, file) or {panic(err)}
+	}
 }
 
