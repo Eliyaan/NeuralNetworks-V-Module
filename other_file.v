@@ -28,5 +28,4 @@ fn main(){
 		neunet.init()
 		neunet.train(u64(nb_epochs))
 	}
-	neunet.init()
 }

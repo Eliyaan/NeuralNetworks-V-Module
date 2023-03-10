@@ -20,6 +20,7 @@ pub struct NeuralNet{
 	
 	save_path string
 	load_path string 
+	print bool
 
 mut:
 	weights_list [][][][]f64
@@ -249,7 +250,7 @@ fn (mut nn NeuralNet) randomise_i_exp_o(){
 
 pub fn (mut nn NeuralNet) init(){
 	if nn.load_path != ""{
-		file := toml.parse_file(nn.save_path) or {panic(err)}
+		file := toml.parse_file(nn.load_path) or {panic(err)}
 		nn.best_cost = file.value("cost").f64()
 		base_weights_list := file.value("weights").array()
 		base_layers_list := file.value("layers").array()
@@ -373,7 +374,7 @@ pub fn (mut nn NeuralNet) train(nb_epochs u64){
 			nn.backprop(i)
 			nn.glob_output[i] = nn.layers_list[nn.nb_hidden_layer][3]
 		}
-		if nn.print_epoch > 0{
+		if nn.print_epoch > 0 && nn.print{
 			if epoch%u64(nn.print_epoch) == 0{
 				println('\nEpoch: $epoch Global Cost: ${nn.global_cost} \nOutputs: $nn.glob_output \nExpected Outputs: $nn.excpd_outputs')
 			}
@@ -386,7 +387,9 @@ pub fn (mut nn NeuralNet) train(nb_epochs u64){
 			nn.best_cost = nn.global_cost
 		}
 	}
-	println('____________________________________________________________\nFinal Results: \nCost: ${nn.global_cost} \nOutputs: $nn.glob_output \nExpected Outputs: $nn.excpd_outputs')
+	if nn.print{
+		println('____________________________________________________________\nFinal Results: \nCost: ${nn.global_cost} \nOutputs: $nn.glob_output \nExpected Outputs: $nn.excpd_outputs')
+	}
 	if need_to_save{
 		file := "cost=${cost_to_save}\nweights=${weights_to_save}\nlayers=${layers_to_save}"
 		os.write_file(nn.save_path, file) or {panic(err)}
