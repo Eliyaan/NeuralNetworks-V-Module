@@ -313,12 +313,7 @@ pub fn (mut nn NeuralNet) init(){
 			}
 		}
 		nn.set_rd_wb_values()
-		cost := (toml.parse_file(nn.save_path) or {panic(err)}).value("cost").f64()
-		if cost != 0.0{
-			nn.best_cost = cost
-		}
 	}
-	
 }
 
 fn (mut nn NeuralNet) test_fprop(inputs []f64){
@@ -380,17 +375,22 @@ pub fn (mut nn NeuralNet) train(nb_epochs u64){
 			}
 		}
 		if nn.best_cost/nn.global_cost > 1.0{
+			print("y")
 			need_to_save = true
 			cost_to_save = nn.global_cost
 			weights_to_save = nn.weights_list.clone()
 			layers_to_save = nn.layers_list.clone()
 			nn.best_cost = nn.global_cost
+		}else{
+			println(nn.best_cost)
+			println(nn.global_cost)
 		}
 	}
 	if nn.print{
 		println('____________________________________________________________\nFinal Results: \nCost: ${nn.global_cost} \nOutputs: $nn.glob_output \nExpected Outputs: $nn.excpd_outputs')
 	}
 	if need_to_save{
+		println(" Saving the progress !")
 		file := "cost=${cost_to_save}\nweights=${weights_to_save}\nlayers=${layers_to_save}"
 		os.write_file(nn.save_path, file) or {panic(err)}
 	}
