@@ -5,6 +5,11 @@ import os
 import toml
 
 
+/*
+FIX THE COST
+*/
+
+
 pub struct NeuralNet{
 	//Consts
 	learning_rate f64
@@ -92,14 +97,13 @@ fn (mut nn NeuralNet) forward_prop(index int){
 	excpd_outputs := nn.excpd_outputs[index]
 	for i, mut hidd_lay in nn.layers_list{
 		for j, mut nactiv in hidd_lay[2]{
-			weight_loc := &nn.weights_list[i][0][j]
 			if i == 0{
 				for k, elem in inputs{  // Pour chaque input
-					nactiv += weight_loc[k] * elem //Le bon weight fois le bon input
+					nactiv += nn.weights_list[i][0][j][k] * elem //Le bon weight fois le bon input
 				}
 			}else{
 				for k, elem in nn.layers_list[i-1][3]{  // Pour chaque input
-					nactiv += weight_loc[k] * elem //Le bon weight fois le bon input
+					nactiv += nn.weights_list[i][0][j][k] * elem //Le bon weight fois le bon input
 				}
 			}
 			
@@ -109,12 +113,14 @@ fn (mut nn NeuralNet) forward_prop(index int){
 	}
 
 	for i in 0..nn.nb_outputs{
-		tmp := nn.layers_list[nn.nb_hidden_layer][3][i] - excpd_outputs[i]
+		tmp := nn.layers_list[nn.nb_hidden_layer][3][i] - excpd_outputs[i]  // NEED TO FIX THE COST
+		println(tmp)
 		nn.layers_list[nn.nb_hidden_layer][4][i] += (tmp*tmp)/2.0
 	}	
 	for cost in nn.layers_list[nn.nb_hidden_layer][4]{
 		nn.global_cost += cost
 	}
+	
 }
 
 [inline]
@@ -323,7 +329,7 @@ pub fn (mut nn NeuralNet) init(){
 
 [inline]
 [direct_array_access]
-fn (mut nn NeuralNet) test_fprop(inputs []f64){
+fn (mut nn NeuralNet) test_fprop(inputs []f64) []f64{
 	for i, mut hidd_lay in nn.layers_list{
 		for j, mut nactiv in hidd_lay[2]{
 			if i == 0{
@@ -340,12 +346,12 @@ fn (mut nn NeuralNet) test_fprop(inputs []f64){
 			hidd_lay[3][j] = nn.activ_func(*nactiv)  //activation function
 		}
 	}
-	println("Tested Inputs: ${inputs}\nTested Output: ${nn.layers_list[nn.nb_hidden_layer][3]} ")	
+	return nn.layers_list[nn.nb_hidden_layer][3]	
 }
 
-pub fn (mut nn NeuralNet) test_value(value []f64){
+pub fn (mut nn NeuralNet) test_value(value []f64) []f64{
 	nn.reset()
-	nn.test_fprop(value)
+	return nn.test_fprop(value)
 }
 
 [direct_array_access]
@@ -404,3 +410,13 @@ pub fn (mut nn NeuralNet) train(nb_epochs u64){
 	}
 }
 
+pub fn (mut nn NeuralNet) softmax() []f64{
+	mut sum := 0.0
+	for value in nn.layers_list[nn.nb_hidden_layer][3]{
+		sum += value
+	}
+	for mut value in nn.layers_list[nn.nb_hidden_layer][3]{
+		value /= sum
+	}
+    return nn.layers_list[nn.nb_hidden_layer][3]
+}
