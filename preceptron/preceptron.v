@@ -34,6 +34,8 @@ mut:
 	best_cost f64 = 100000000000
 }
 
+[inline]
+[direct_array_access]
 fn (mut nn NeuralNet) set_rd_wb_values(){
 	//Weights
 	for mut hw_wc_list in nn.weights_list{
@@ -83,28 +85,21 @@ fn dsig(value f64) f64{
 	return sigx*(1 - sigx)
 }
 
-// fn (mut nn NeuralNet) softmax(){
-// 	mut sum := 0.0
-// 	for value in nn.output{
-// 		sum += value
-// 	}
-// 	for mut value in nn.output{
-// 		value /= sum
-// 	}
-// }
-
+[inline]
+[direct_array_access]
 fn (mut nn NeuralNet) forward_prop(index int){
 	inputs := nn.inputs[index]
 	excpd_outputs := nn.excpd_outputs[index]
 	for i, mut hidd_lay in nn.layers_list{
 		for j, mut nactiv in hidd_lay[2]{
+			weight_loc := &nn.weights_list[i][0][j]
 			if i == 0{
 				for k, elem in inputs{  // Pour chaque input
-					nactiv += nn.weights_list[i][0][j][k] * elem //Le bon weight fois le bon input
+					nactiv += weight_loc[k] * elem //Le bon weight fois le bon input
 				}
 			}else{
 				for k, elem in nn.layers_list[i-1][3]{  // Pour chaque input
-					nactiv += nn.weights_list[i][0][j][k] * elem //Le bon weight fois le bon input
+					nactiv += weight_loc[k] * elem //Le bon weight fois le bon input
 				}
 			}
 			
@@ -114,13 +109,16 @@ fn (mut nn NeuralNet) forward_prop(index int){
 	}
 
 	for i in 0..nn.nb_outputs{
-		nn.layers_list[nn.nb_hidden_layer][4][i] += m.pow(nn.layers_list[nn.nb_hidden_layer][3][i] - excpd_outputs[i], 2)/2
+		tmp := nn.layers_list[nn.nb_hidden_layer][3][i] - excpd_outputs[i]
+		nn.layers_list[nn.nb_hidden_layer][4][i] += (tmp*tmp)/2.0
 	}	
 	for cost in nn.layers_list[nn.nb_hidden_layer][4]{
 		nn.global_cost += cost
 	}
 }
 
+[inline]
+[direct_array_access]
 fn (mut nn NeuralNet) reset(){
 	for i, mut hidden_lay in nn.layers_list{
 		if i == nn.nb_hidden_layer{
@@ -139,6 +137,8 @@ fn (mut nn NeuralNet) reset(){
 	}
 }
 
+[inline]
+[direct_array_access]
 fn (mut nn NeuralNet) backprop(index int){
 	//Dsig nactiv all neurons
 	for mut hidden_lay in nn.layers_list{
@@ -216,6 +216,8 @@ fn (mut nn NeuralNet) backprop(index int){
 	}
 }
 
+[inline]
+[direct_array_access]
 fn (mut nn NeuralNet) apply_delta(){
 	//Output Weights
 	for mut hidd_lay in nn.weights_list{
@@ -233,6 +235,8 @@ fn (mut nn NeuralNet) apply_delta(){
 	}
 }
 
+[inline]
+[direct_array_access]
 fn (mut nn NeuralNet) randomise_i_exp_o(){
 	mut base_inputs := nn.inputs.clone()
 	range := base_inputs.len
@@ -248,6 +252,7 @@ fn (mut nn NeuralNet) randomise_i_exp_o(){
 	}
 }
 
+[direct_array_access]
 pub fn (mut nn NeuralNet) init(){
 	if nn.load_path != ""{
 		file := toml.parse_file(nn.load_path) or {panic(err)}
@@ -316,6 +321,8 @@ pub fn (mut nn NeuralNet) init(){
 	}
 }
 
+[inline]
+[direct_array_access]
 fn (mut nn NeuralNet) test_fprop(inputs []f64){
 	for i, mut hidd_lay in nn.layers_list{
 		for j, mut nactiv in hidd_lay[2]{
@@ -341,6 +348,7 @@ pub fn (mut nn NeuralNet) test_value(value []f64){
 	nn.test_fprop(value)
 }
 
+[direct_array_access]
 pub fn (mut nn NeuralNet) train(nb_epochs u64){
 	mut need_to_save := false
 	mut cost_to_save := 0.0
