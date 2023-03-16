@@ -7,6 +7,7 @@ import toml
 
 /*
 FIX THE COST
+add the data modifications to have more data
 */
 
 
