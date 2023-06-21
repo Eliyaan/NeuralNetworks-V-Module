@@ -5,21 +5,17 @@ import os
 import toml
 
 
-/*
-FIX THE COST
-add the data modifications to have more data
-*/
 
-
-pub struct NeuralNet{
-	//Consts
+pub struct NeuralNetwork{
 	learning_rate f64
 	nb_inputs int 
 	nb_hidden_layer int
-	nb_hidden_neurones []int 
+	nb_hidden_neurones []int // contains the nbr of neurones for each hidden layer
 	nb_outputs int
 	activ_func fn(f64) f64
-	deriv_activ_func fn(f64) f64
+
+	//if you use a dataset
+	deriv_activ_func fn(f64) f64 
 
 	shuffle_dataset bool
 	print_epoch int
@@ -29,20 +25,24 @@ pub struct NeuralNet{
 	print bool
 
 mut:
-	weights_list [][][][]f64
-	layers_list [][][]f64  // bias, bias cost, nactiv, output(activ), cost
+	weights_list [][][][]f64 // [layer_nbr][weights/weights_cost (0or1)][start_neuron_nbr][result_neuron_nbr] it stores the weights and their associated costs
+	layers_list [][][]f64  // [layer_nbr][bias/bcost/nactiv...*(see at the end of the comment)][neuron_nbr] (contains all the hidden layers and the output sothe 0 is the first hidden layer) * bias, bias cost, non-activated_output (nactiv), output (activ), cost
+	
+	// the followings are if you are training it with a dataset most probably, you wont need it for exemple for a genetic algorithm
 	glob_output [][]f64
 	global_cost f64
-	
-	inputs [][]f64 
-	excpd_outputs [][]f64  // first : prob for 0 ; sec : prob for 1
+	inputs [][]f64 // store the inputs that will be used for the training
+	excpd_outputs [][]f64  // store the wanted neuron activations ex : [[0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 1.0]] for 2 inputs, the first one should fire the second neuron and no other ones and the second input should fire the third one and the fourth (normally can suport 0.3 or floats like that, so not limited to either 0 or 1)
 
 	best_cost f64 = 100000000000
 }
 
+
+
+//To initialise the nn with random weights and biases
 [inline]
 [direct_array_access]
-fn (mut nn NeuralNet) set_rd_wb_values(){
+fn (mut nn NeuralNetwork) set_rd_wb_values(){
 	//Weights
 	for mut hw_wc_list in nn.weights_list{
 		for mut weights_list in hw_wc_list[0]{
@@ -60,6 +60,7 @@ fn (mut nn NeuralNet) set_rd_wb_values(){
 	}
 }
 
+//Different activation functions and their derivatives
 [inline]
 fn relu(value f64) f64{
 	return if value<0{0}else{value}
@@ -93,18 +94,17 @@ fn dsig(value f64) f64{
 
 [inline]
 [direct_array_access]
-fn (mut nn NeuralNet) forward_prop(index int){
-	inputs := nn.inputs[index]
-	excpd_outputs := nn.excpd_outputs[index]
-	for i, mut hidd_lay in nn.layers_list{
-		for j, mut nactiv in hidd_lay[2]{
-			if i == 0{
-				for k, elem in inputs{  // Pour chaque input
-					nactiv += nn.weights_list[i][0][j][k] * elem //Le bon weight fois le bon input
+fn (mut nn NeuralNetwork) forward_prop(index int){
+	inputs := &nn.inputs[index] // take the right input (can replace that with a non-dataset input if you need)
+	for i, mut hidd_lay in nn.layers_list{ // For each hidden layer (and the output)
+		for j, mut nactiv in hidd_lay[2]{ // For each neuron in the concerned layer
+			if i == 0{ // special case for the input layer (not stored in the layers_list)
+				for k, elem in inputs{  // For each input
+					nactiv += nn.weights_list[i][0][j][k] * *elem // add the multiplication of the input and the concerned weight to the non-activated output
 				}
 			}else{
-				for k, elem in nn.layers_list[i-1][3]{  // Pour chaque input
-					nactiv += nn.weights_list[i][0][j][k] * elem //Le bon weight fois le bon input
+				for k, elem in nn.layers_list[i-1][3]{  // For each input
+					nactiv += nn.weights_list[i][0][j][k] * elem // add the multiplication of the input and the concerned weight to the non-activated output
 				}
 			}
 			
@@ -113,9 +113,11 @@ fn (mut nn NeuralNet) forward_prop(index int){
 		}
 	}
 
+
+	// Used if you have a dataset if not you can use fprop_value
+	excpd_outputs := &nn.excpd_outputs[index] // take the right expected output
 	for i in 0..nn.nb_outputs{
-		tmp := nn.layers_list[nn.nb_hidden_layer][3][i] - excpd_outputs[i]  // NEED TO FIX THE COST
-		println(tmp)
+		tmp := nn.layers_list[nn.nb_hidden_layer][3][i] - unsafe{excpd_outputs[i]}  // maybe some error there
 		nn.layers_list[nn.nb_hidden_layer][4][i] += (tmp*tmp)/2.0
 	}	
 	for cost in nn.layers_list[nn.nb_hidden_layer][4]{
@@ -126,9 +128,9 @@ fn (mut nn NeuralNet) forward_prop(index int){
 
 [inline]
 [direct_array_access]
-fn (mut nn NeuralNet) reset(){
+fn (mut nn NeuralNetwork) reset(){ // reset the layers that changed
 	for i, mut hidden_lay in nn.layers_list{
-		if i == nn.nb_hidden_layer{
+		if i == nn.nb_hidden_layer{ // special case for the output because the number is stored somewhere else
 			hidden_lay[3] = []f64{len:nn.nb_outputs}
 			hidden_lay[2] = []f64{len:nn.nb_outputs}
 			if i < nn.nb_hidden_layer{
@@ -144,33 +146,37 @@ fn (mut nn NeuralNet) reset(){
 	}
 }
 
+
+// A possible way to train the network if you use a dataset
+// Most complicated part of the program, there may be some errors but I dont think so
 [inline]
 [direct_array_access]
-fn (mut nn NeuralNet) backprop(index int){
-	//Dsig nactiv all neurons
+fn (mut nn NeuralNetwork) backprop(index int){
+	//Dsig nactiv all neurons 
 	for mut hidden_lay in nn.layers_list{
 		for mut elem in hidden_lay[2]{
 			elem = nn.deriv_activ_func(*elem)
 		}
 	}
-	//Reverif toute la backprop pour s'assurer qu'elle soit dans le bon sens avec les bons trucs car c pas ca x)
 	for i := nn.nb_hidden_layer; i>=0; i--{ 
 		hidd_lay := nn.layers_list[i]
-		if i == nn.nb_hidden_layer{ //Correct
-			//Weights
+		if i == nn.nb_hidden_layer{ // for the output
+			//Costs of the neurons (I think)
 			for l, mut outputlist in nn.weights_list[i][1]{
 				for j, mut weight_cost in outputlist{
 					weight_cost += nn.layers_list[i-1][3][j]*hidd_lay[2][l]*(hidd_lay[3][l]-nn.excpd_outputs[index][l]) 
 				}
 			}
+			//Biases
 			for l, mut bias_cost in hidd_lay[1]{
 				bias_cost += hidd_lay[2][l]*(hidd_lay[3][l]-nn.excpd_outputs[index][l]) 
 			}
-		}else if i == 0{
-			if nn.nb_hidden_neurones.len > 1{
+		}else if i == 0{ // for the first layer
+			//Costs of the neurons (I think)
+			if nn.nb_hidden_neurones.len > 1{ // if there is more than 1 hidden layer (idk why I didn't use the nb of hidden layers)
 				for l, mut hidden_cost in hidd_lay[4]{
 					for j in 0..nn.nb_hidden_neurones[1]{//a changer pour I+1 pour le reste + faire un condi si au moins 1
-						hidden_cost += nn.weights_list[1][0][j][l]*nn.layers_list[1][2][j]*nn.layers_list[1][4][j]
+						hidden_cost += nn.weights_list[1][0][j][l]*nn.layers_list[1][2][j]*nn.layers_list[1][4][j]  // idk why it is 1 on this line and nn.nb_hidden_layer in the else one (may be an mistake)
 					}
 				}
 			}else{
@@ -186,10 +192,12 @@ fn (mut nn NeuralNet) backprop(index int){
 					weight_cost += nn.inputs[index][j]*hidd_lay[2][l]*hidd_lay[4][l] 
 				}
 			}
+			//Biases
 			for l, mut bias_cost in hidd_lay[1]{
 				bias_cost += hidd_lay[2][l]*hidd_lay[4][l]
 			}					
-		}else if i == nn.nb_hidden_layer-1{
+		}else if i == nn.nb_hidden_layer-1{ // the hidden layber before the output layer
+			//Costs of the neurons (I think)
 			for l, mut hidden_cost in hidd_lay[4]{
 				for j in 0..nn.layers_list[nn.nb_hidden_layer][0].len{//Len of last layer
 					hidden_cost += nn.weights_list[nn.nb_hidden_layer][0][j][l]*nn.layers_list[nn.nb_hidden_layer][2][j]*(nn.layers_list[nn.nb_hidden_layer][3][j]-nn.excpd_outputs[index][j])
@@ -201,10 +209,12 @@ fn (mut nn NeuralNet) backprop(index int){
 					weight_cost += nn.layers_list[i-1][3][j]*hidd_lay[2][l]*hidd_lay[4][l]
 				}
 			}
+			//Biases
 			for l, mut bias_cost in hidd_lay[1]{
 				bias_cost += hidd_lay[2][l]*hidd_lay[4][l]
 			}
-		}else{
+		}else{ // every other hidden layer
+			//Costs of the neurons (I think)
 			for l, mut hidden_cost in hidd_lay[4]{
 				for j in 0..nn.nb_hidden_neurones[i+1]{
 					hidden_cost += nn.weights_list[i+1][0][j][l]*nn.layers_list[i+1][2][j]*nn.layers_list[i+1][4][j]
@@ -216,6 +226,7 @@ fn (mut nn NeuralNet) backprop(index int){
 					weight_cost += nn.layers_list[i-1][3][j]*hidd_lay[2][k]*hidd_lay[4][k]
 				}
 			}
+			//Biases
 			for l, mut bias_cost in hidd_lay[1]{
 				bias_cost += hidd_lay[2][l]*hidd_lay[4][l]
 			}
@@ -225,8 +236,8 @@ fn (mut nn NeuralNet) backprop(index int){
 
 [inline]
 [direct_array_access]
-fn (mut nn NeuralNet) apply_delta(){
-	//Output Weights
+fn (mut nn NeuralNetwork) apply_delta(){ // Apply the modifications calculated with the costs of the backprop
+	//Weights
 	for mut hidd_lay in nn.weights_list{
 		for i, mut w_list in hidd_lay[0]{
 			for j, mut weight in w_list{
@@ -234,7 +245,7 @@ fn (mut nn NeuralNet) apply_delta(){
 			}
 		}
 	}
-
+	//Biases
 	for mut hidd_lay in nn.layers_list{
 		for i, mut bias in hidd_lay[0]{
 			bias -= hidd_lay[1][i] * nn.learning_rate
@@ -243,8 +254,8 @@ fn (mut nn NeuralNet) apply_delta(){
 }
 
 [inline]
-[direct_array_access]
-fn (mut nn NeuralNet) randomise_i_exp_o(){
+[direct_array_access]  
+fn (mut nn NeuralNetwork) randomise_i_exp_o(){ // To shuffle the dataset I think
 	mut base_inputs := nn.inputs.clone()
 	range := base_inputs.len
 	mut base_expd_o := nn.excpd_outputs.clone()
@@ -260,8 +271,8 @@ fn (mut nn NeuralNet) randomise_i_exp_o(){
 }
 
 [direct_array_access]
-pub fn (mut nn NeuralNet) init(){
-	if nn.load_path != ""{
+pub fn (mut nn NeuralNetwork) init(){ // To initialise the neural network
+	if nn.load_path != ""{ // If there was a saved nn
 		file := toml.parse_file(nn.load_path) or {panic(err)}
 		nn.best_cost = file.value("cost").f64()
 		base_weights_list := file.value("weights").array()
@@ -292,7 +303,7 @@ pub fn (mut nn NeuralNet) init(){
 		nn.layers_list = base_layers_list_good
 		nn.weights_list = base_weights_listgood
 		nn.glob_output = [][]f64{len:nn.excpd_outputs.len, init:[]f64{len:nn.nb_inputs}}
-	}else{
+	}else{ // If it's a new nn
 		nn.weights_list = [][][][]f64{len:nn.nb_hidden_layer+1, init:[][][]f64{len:2, init:[][]f64{}}}
 		nn.layers_list = [][][]f64{len:nn.nb_hidden_layer+1, init:[][]f64{len:5, init:[]f64{}}}
 		nn.glob_output = [][]f64{len:nn.excpd_outputs.len, init:[]f64{len:nn.nb_inputs}}
@@ -328,35 +339,48 @@ pub fn (mut nn NeuralNet) init(){
 	}
 }
 
+pub fn (mut nn NeuralNetwork) softmax() []f64{ // softmax function if needed
+	mut sum := 0.0
+	for value in nn.layers_list[nn.nb_hidden_layer][3]{
+		sum += value
+	}
+	for mut value in nn.layers_list[nn.nb_hidden_layer][3]{
+		value /= sum
+	}
+    return nn.layers_list[nn.nb_hidden_layer][3]
+}
+
 [inline]
 [direct_array_access]
-fn (mut nn NeuralNet) test_fprop(inputs []f64) []f64{
+fn (mut nn NeuralNetwork) test_fprop(input []f64) []f64{ // Return the result of the nn for this input, use this if you dont have a dataset
 	for i, mut hidd_lay in nn.layers_list{
 		for j, mut nactiv in hidd_lay[2]{
 			if i == 0{
-				for k, elem in inputs{  // Pour chaque input
-					nactiv += nn.weights_list[i][0][j][k] * elem //Le bon weight fois le bon input
+				for k, elem in input{
+					nactiv += nn.weights_list[i][0][j][k] * elem
 				}
 			}else{
-				for k, elem in nn.layers_list[i-1][3]{  // Pour chaque input
-					nactiv += nn.weights_list[i][0][j][k] * elem //Le bon weight fois le bon input
+				for k, elem in nn.layers_list[i-1][3]{
+					nactiv += nn.weights_list[i][0][j][k] * elem
 				}
 			}
 			
-			nactiv += hidd_lay[0][j]  // Ajout du bias
-			hidd_lay[3][j] = nn.activ_func(*nactiv)  //activation function
+			nactiv += hidd_lay[0][j]
+			hidd_lay[3][j] = nn.activ_func(*nactiv)
 		}
 	}
 	return nn.layers_list[nn.nb_hidden_layer][3]	
 }
 
-pub fn (mut nn NeuralNet) test_value(value []f64) []f64{
+
+// Use this if you dont have a dataset or just to test some inputs
+pub fn (mut nn NeuralNetwork) fprop_value(input []f64) []f64{
 	nn.reset()
-	return nn.test_fprop(value)
+	return nn.test_fprop(input)
 }
 
 [direct_array_access]
-pub fn (mut nn NeuralNet) train(nb_epochs u64){
+pub fn (mut nn NeuralNetwork) train_backprop(nb_epochs u64){ // exemple of a training loop
 	mut need_to_save := false
 	mut cost_to_save := 0.0
 	mut weights_to_save := [][][][]f64{}
@@ -390,7 +414,6 @@ pub fn (mut nn NeuralNet) train(nb_epochs u64){
 			}
 		}
 		if nn.best_cost/nn.global_cost > 1.0{
-			print("y")
 			need_to_save = true
 			cost_to_save = nn.global_cost
 			weights_to_save = nn.weights_list.clone()
@@ -411,13 +434,3 @@ pub fn (mut nn NeuralNet) train(nb_epochs u64){
 	}
 }
 
-pub fn (mut nn NeuralNet) softmax() []f64{
-	mut sum := 0.0
-	for value in nn.layers_list[nn.nb_hidden_layer][3]{
-		sum += value
-	}
-	for mut value in nn.layers_list[nn.nb_hidden_layer][3]{
-		value /= sum
-	}
-    return nn.layers_list[nn.nb_hidden_layer][3]
-}
