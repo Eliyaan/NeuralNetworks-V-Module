@@ -18,7 +18,7 @@ pub struct NeuralNetwork{
 	
 	save_path string
 	load_path string 
-	print bool
+	print bool = true
 
 mut:
 	weights_list [][][][]f64 // [layer_nbr][weights/weights_cost (0or1)][start_neuron_nbr][result_neuron_nbr] it stores the weights and their associated costs
@@ -65,10 +65,23 @@ pub fn (mut nn NeuralNetwork) init(){ // To initialise the neural network
 		nn.layers_list = base_layers_list_good
 		nn.weights_list = base_weights_listgood
 	}else{ // If it's a new nn
-		nn.weights_list = [][][][]f64{len:nn.nb_neurones.len-1, init:[][][]f64{len:2, init:[][]f64{len:nn.nb_neurones[index], init:[]f64{len:nn.nb_neurones[index+1]}}}}
-		nn.layers_list = [][][]f64{len:nn.nb_neurones.len, init:[][]f64{len:5, init:[]f64{len:nn.nb_neurones[index]}}}
+		nn.weights_list = [][][][]f64{len:nn.nb_neurones.len-1, init:[][][]f64{len:2, init:[][]f64{}}}
+		for i, mut layer in nn.weights_list{ //for each layer
+			for mut type_list in layer{  // for each data type (weight/associated cost)
+				for j in 0..nn.nb_neurones[i]{  // for each input neuron of the weights
+					type_list << []f64{len:nn.nb_neurones[i+1]}  // for each output neuron
+				}
+			}
+		}
 
-		nn.set_rd_wb_values()
+		nn.layers_list = [][][]f64{len:nn.nb_neurones.len, init:[][]f64{}}
+		for i, mut layer in nn.layers_list{  // for each layer
+			for _ in 0..5{  // for each type (bias, bias cost, non-activated_output (nactiv), output (activ), cost)
+				layer << []f64{len:nn.nb_neurones[i]} // for each neuron
+			}
+		}
+	
+		nn.set_rd_wb_values() // init the random weights and biases
 	}
 }
 
@@ -84,7 +97,6 @@ pub fn (mut nn NeuralNetwork) fprop_value(input []f64) []f64{ // Return the resu
 				for k, elem in nn.layers_list[i-1][3]{  // For each input (each neuron of the last layer)
 					nactiv += nn.weights_list[i-1][0][k][j] * elem // add the multiplication of the input (of the last layer) and the concerned weight to the non-activated output
 				}
-				
 				nactiv += hidd_lay[0][j]  // Ajout du bias
 				hidd_lay[3][j] = nn.activ_func(*nactiv)  //activation function
 			}
