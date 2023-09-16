@@ -25,14 +25,14 @@ pub fn (mut nn NeuralNetwork) train_backprop(nb_epochs u64) {
 			nn.apply_delta()
 		}
 		nn.global_cost = 0.0 // reset the cost before the training of this epoch
-		timestamp = time.now()
 		for i in 0 .. nn.training_inputs.len {
 			nn.neurons_costs_reset()
 			nn.backprop(i)
 		}
 		if nn.print_epoch > 0 {
 			if epoch % u64(nn.print_epoch) == 0 {
-				println('\nEpoch: ${epoch} Global Cost: ${nn.global_cost} Time Elapsed: ${time.now() - timestamp}')
+				println('\nEpoch: ${epoch} Global Cost: ${nn.global_cost} Time Elapsed: ${(time.now() - timestamp)}')
+				timestamp = time.now()
 			}
 		}
 		if nn.best_cost / nn.global_cost > 1.0 {
