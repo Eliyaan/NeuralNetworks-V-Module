@@ -21,7 +21,7 @@ fn main() {
 	print(neunet.fprop_value([1.0, 0.0]))
 	print(neunet.fprop_value([1.0, 1.0]))
 
-	neunet.train_backprop(4000)
+	neunet.train_backprop(2000)
 
 	print(neunet.fprop_value([0.0, 0.0]))
 	print(neunet.fprop_value([0.0, 1.0]))
