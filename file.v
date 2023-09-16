@@ -17,15 +17,15 @@ fn main() {
 	}
 	neunet.init()
 
-	print(p.get_neuron_array_output(neunet.fprop_value([0.0, 0.0])))
-	print(p.get_neuron_array_output(neunet.fprop_value([0.0, 1.0])))
-	print(p.get_neuron_array_output(neunet.fprop_value([1.0, 0.0])))
-	print(p.get_neuron_array_output(neunet.fprop_value([1.0, 1.0])))
+	print(neunet.fprop_value([0.0, 0.0]))
+	print(neunet.fprop_value([0.0, 1.0]))
+	print(neunet.fprop_value([1.0, 0.0]))
+	print(neunet.fprop_value([1.0, 1.0]))
 
 	neunet.train_backprop(4000)
 
-	print(p.get_neuron_array_output(neunet.fprop_value([0.0, 0.0])))
-	print(p.get_neuron_array_output(neunet.fprop_value([0.0, 1.0])))
-	print(p.get_neuron_array_output(neunet.fprop_value([1.0, 0.0])))
-	print(p.get_neuron_array_output(neunet.fprop_value([1.0, 1.0])))
+	print(neunet.fprop_value([0.0, 0.0]))
+	print(neunet.fprop_value([0.0, 1.0]))
+	print(neunet.fprop_value([1.0, 0.0]))
+	print(neunet.fprop_value([1.0, 1.0]))
 }

@@ -2,7 +2,10 @@ module preceptron
 
 import math as m
 
-// Different activation functions and their derivatives
+/*
+Different activation functions and their derivatives
+*/
+
 [inline]
 fn tanh(value f64) f64 {
 	return (m.exp(value) - m.exp(-value)) / (m.exp(value) + m.exp(-value))

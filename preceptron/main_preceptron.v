@@ -2,7 +2,13 @@ module preceptron
 
 import toml
 
-// minibatches
+/*
+Main functions and structs for the neural networks
+*/
+
+// TODO	:
+// minibatches ?
+// mesure the time of the backprop in the print ?
 
 pub struct Neuron {
 mut:
@@ -39,13 +45,14 @@ mut:
 	global_cost            f64
 	training_inputs        [][]f64
 	excpd_training_outputs [][]f64
-	minibatch_size         int
 	best_cost              f64 = 100000000000
 }
 
-[direct_array_access]
-pub fn (mut nn NeuralNetwork) init() { // To initialise the neural network
-	if nn.load_path != '' { // KASSé
+/*
+Initialise the neural network
+*/
+pub fn (mut nn NeuralNetwork) init() {
+	if nn.load_path != '' {
 		file := toml.parse_file(nn.load_path) or { panic(err) }
 		nn.best_cost = file.value('cost').f64()
 		base_weights_list := file.value('weights').array()
@@ -87,33 +94,42 @@ pub fn (mut nn NeuralNetwork) init() { // To initialise the neural network
 	}
 }
 
-// For doing a simple forward propagation
+/*
+For doing a simple forward propagation
+Input	: array of values (1 value by input neuron)
+Output	: array of the outputs
+*/
 [direct_array_access; inline]
-pub fn (mut nn NeuralNetwork) fprop_value(inputs []f64) []Neuron { // Return the result of the nn for this input, use this if you dont have a dataset
+pub fn (mut nn NeuralNetwork) fprop_value(inputs []f64) []f64 {
 	for i, input in inputs {
 		nn.layers_list[0][i].output = input
 	}
-	for i, mut hidd_lay in nn.layers_list { // For each layer (hidden and output)
-		if i > 0 { // ignore the input layer
-			for j, mut o_neuron in hidd_lay { // For each neuron in the concerned layer
-				o_neuron.nactiv = 0
-				for k, i_neuron in nn.layers_list[i - 1] { // For each input (each neuron of the last layer)
-					o_neuron.nactiv += nn.weights_list[i - 1][k][j].weight * i_neuron.output // add the multiplication of the input (of the last layer) and the concerned weight to the non-activated output
-				}
-				o_neuron.nactiv += o_neuron.bias // Ajout du bias
-				hidd_lay[j].output = nn.activ_func(o_neuron.nactiv) // activation function
+	for i, mut layer in nn.layers_list[1..] { // For each layer (hidden & output)
+		for j, mut o_neuron in layer { // For each neuron in the concerned output layer
+			o_neuron.nactiv = 0
+			for k, i_neuron in nn.layers_list[i - 1] { // For each neuron in the concerned input layer
+				o_neuron.nactiv += nn.weights_list[i - 1][k][j].weight * i_neuron.output
 			}
+			o_neuron.nactiv += o_neuron.bias
+			layer[j].output = nn.activ_func(o_neuron.nactiv)
 		}
 	}
-
-	return nn.layers_list[nn.nb_neurones.len - 1]
+	return get_outputs(nn.layers_list[nn.nb_neurones.len - 1])
 }
 
+/*
+Input	: Neuron array
+Output	: The outputs of the neuron array
+*/
 [direct_array_access; inline]
-pub fn get_neuron_array_output(neurons []Neuron) []f64 {
+pub fn get_outputs(neurons []Neuron) []f64 {
 	return []f64{len: neurons.len, init: neurons[index].output}
 }
 
+/*
+Input	: Neural network neuron array
+Output	: The biases of the neurons
+*/
 [direct_array_access; inline]
 pub fn get_biases(neurons [][]Neuron) [][]f64 {
 	mut biases := [][]f64{}
@@ -123,6 +139,10 @@ pub fn get_biases(neurons [][]Neuron) [][]f64 {
 	return biases
 }
 
+/*
+Input	: Neural network weights array
+Output	: The weights values of the weights
+*/
 [direct_array_access; inline]
 pub fn get_weights(weights_objs [][][]Weight) [][][]f64 {
 	mut weights := [][][]f64{len: weights_objs.len}

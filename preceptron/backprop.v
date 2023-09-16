@@ -2,24 +2,27 @@ module preceptron
 
 import os
 
+/*
+Backpropagation implementation
+*/
+
+/*
+Backprop training loop
+Input	: number of epochs that will run
+*/
 [direct_array_access]
-pub fn (mut nn NeuralNetwork) train_backprop(nb_epochs u64) { // exemple of a training loop
-	// vars for the save
+pub fn (mut nn NeuralNetwork) train_backprop(nb_epochs u64) {
 	mut need_to_save := false
 	mut cost_to_save := 0.0
 	mut weights_to_save := [][][]Weight{}
 	mut layers_to_save := [][]Neuron{}
 
-	// Training
 	for epoch in 0 .. nb_epochs {
-		if epoch > 0 { // there to not change the last tested nn at the end of the training
+		if epoch > 0 {
 			nn.apply_delta()
 		}
-		if nn.minibatch_size > 0 {
-			nn.randomise_i_exp_o()
-		}
 		nn.global_cost = 0.0 // reset the cost before the training of this epoch
-		for i in 0 .. nn.training_inputs.len { // mesure the time ?
+		for i in 0 .. nn.training_inputs.len {
 			nn.neurons_costs_reset()
 			nn.backprop(i)
 		}
@@ -31,8 +34,8 @@ pub fn (mut nn NeuralNetwork) train_backprop(nb_epochs u64) { // exemple of a tr
 		if nn.best_cost / nn.global_cost > 1.0 {
 			need_to_save = true
 			cost_to_save = nn.global_cost
-			weights_to_save = nn.weights_list.clone() // KASSé
-			layers_to_save = nn.layers_list.clone() // KASSé
+			weights_to_save = nn.weights_list.clone()
+			layers_to_save = nn.layers_list.clone()
 			nn.best_cost = nn.global_cost
 		}
 	}
@@ -46,19 +49,21 @@ pub fn (mut nn NeuralNetwork) train_backprop(nb_epochs u64) { // exemple of a tr
 	}
 }
 
-// A possible way to train the network if you use a dataset
+/*
+Calculates the costs of each wieghts and biases
+*/
 [direct_array_access; inline]
 fn (mut nn NeuralNetwork) backprop(index int) {
 	nn.fprop_value(nn.training_inputs[index])
 
-	// cost for the eyes
-	for i, neuron in nn.layers_list[nn.nb_neurones.len - 1] { // pour chaque output
+	// Cost for the print
+	for i, neuron in nn.layers_list[nn.nb_neurones.len - 1] { // for each output
 		tmp := neuron.output - nn.excpd_training_outputs[index][i]
-		nn.global_cost += tmp * tmp // Cost of each output
+		nn.global_cost += tmp * tmp
 	}
 
-	// Start backprop
-	// Deriv nactiv of all neurons
+	// Start of the backprop
+	// Deriv nactiv of all neurons to do it only one time
 	for mut layer in nn.layers_list {
 		for mut neuron in layer {
 			neuron.nactiv = nn.deriv_activ_func(neuron.nactiv)
@@ -66,7 +71,7 @@ fn (mut nn NeuralNetwork) backprop(index int) {
 	}
 
 	// deltaC/deltaA(last)
-	for i, mut neuron in nn.layers_list[nn.nb_neurones.len - 1] { // pour chaque output
+	for i, mut neuron in nn.layers_list[nn.nb_neurones.len - 1] { // for each output
 		neuron.cost = 2.0 * (neuron.output - nn.excpd_training_outputs[index][i])
 	}
 
@@ -83,7 +88,7 @@ fn (mut nn NeuralNetwork) backprop(index int) {
 	}
 
 	// deltaC/deltaA(i)
-	for i := nn.nb_neurones.len - 2; i > 0; i-- { // for each hidden layer
+	for i := nn.nb_neurones.len - 2; i > 0; i-- { // for each hidden layer but starting at the end
 		for j in 0 .. nn.nb_neurones[i] { // for each neuron of the layer
 			for k in 0 .. nn.nb_neurones[i + 1] { // for each neuron of the next layer
 				nn.layers_list[i][j].cost += nn.weights_list[i][j][k].weight * nn.layers_list[i + 1][k].nactiv * nn.layers_list[
@@ -92,7 +97,7 @@ fn (mut nn NeuralNetwork) backprop(index int) {
 		}
 	}
 
-	for i in 1 .. nn.nb_neurones.len - 1 { // for each hidden layer (output already done and nothing on input)
+	for i in 1 .. nn.nb_neurones.len - 1 { // for each hidden layer (output already done and nothing to do on input)
 		// Weights
 		for j, mut weight_list in nn.weights_list[i - 1] { // j = nb input neuron
 			for k, mut weight in weight_list { // k = nb output neuron
@@ -101,14 +106,17 @@ fn (mut nn NeuralNetwork) backprop(index int) {
 		}
 
 		// Biases
-		for mut neuron in nn.layers_list[i] {
+		for mut neuron in nn.layers_list[i] { // for each neuron of each layer
 			neuron.b_cost += neuron.nactiv * neuron.cost
 		}
 	}
 }
 
+/*
+Apply the modifications based on the cost calculated in the backprop
+*/
 [direct_array_access; inline]
-fn (mut nn NeuralNetwork) apply_delta() { // Apply the modifications calculated with the costs of the backprop
+fn (mut nn NeuralNetwork) apply_delta() {
 	// Weights
 	for mut layer in nn.weights_list {
 		for mut weight_list in layer {
@@ -120,7 +128,7 @@ fn (mut nn NeuralNetwork) apply_delta() { // Apply the modifications calculated 
 	}
 
 	// Biases
-	for mut layer in nn.layers_list[1..] { // cause we dont care about the bias of the input neuron that doesn't need to exist
+	for mut layer in nn.layers_list[1..] { // for each layer excluding the input layer
 		for mut neuron in layer {
 			neuron.bias -= neuron.b_cost * nn.learning_rate
 			neuron.b_cost = 0.0
@@ -128,8 +136,11 @@ fn (mut nn NeuralNetwork) apply_delta() { // Apply the modifications calculated 
 	}
 }
 
+/*
+Reset the costs that aren't reset in the backprop
+*/
 [direct_array_access; inline]
-fn (mut nn NeuralNetwork) neurons_costs_reset() { // reset the layers that changed
+fn (mut nn NeuralNetwork) neurons_costs_reset() {
 	for mut layer in nn.layers_list[1..] {
 		for mut neuron in layer {
 			neuron.cost = 0.0
