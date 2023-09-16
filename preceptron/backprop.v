@@ -1,6 +1,7 @@
 module preceptron
 
 import os
+import time
 
 /*
 Backpropagation implementation
@@ -17,18 +18,21 @@ pub fn (mut nn NeuralNetwork) train_backprop(nb_epochs u64) {
 	mut weights_to_save := [][][]Weight{}
 	mut layers_to_save := [][]Neuron{}
 
+	mut timestamp := time.now()
+
 	for epoch in 0 .. nb_epochs {
 		if epoch > 0 {
 			nn.apply_delta()
 		}
 		nn.global_cost = 0.0 // reset the cost before the training of this epoch
+		timestamp = time.now()
 		for i in 0 .. nn.training_inputs.len {
 			nn.neurons_costs_reset()
 			nn.backprop(i)
 		}
 		if nn.print_epoch > 0 {
 			if epoch % u64(nn.print_epoch) == 0 {
-				println('\nEpoch: ${epoch} Global Cost: ${nn.global_cost}')
+				println('\nEpoch: ${epoch} Global Cost: ${nn.global_cost} Time Elapsed: ${time.now() - timestamp}')
 			}
 		}
 		if nn.best_cost / nn.global_cost > 1.0 {

@@ -51,6 +51,7 @@ mut:
 /*
 Initialise the neural network
 */
+[direct_array_access]
 pub fn (mut nn NeuralNetwork) init() {
 	if nn.load_path != '' {
 		file := toml.parse_file(nn.load_path) or { panic(err) }
@@ -105,13 +106,13 @@ pub fn (mut nn NeuralNetwork) fprop_value(inputs []f64) []f64 {
 		nn.layers_list[0][i].output = input
 	}
 	for i, mut layer in nn.layers_list[1..] { // For each layer (hidden & output)
-		for j, mut o_neuron in layer { // For each neuron in the concerned output layer
+		for k, mut o_neuron in layer { // For each neuron in the concerned output layer
 			o_neuron.nactiv = 0
-			for k, i_neuron in nn.layers_list[i - 1] { // For each neuron in the concerned input layer
-				o_neuron.nactiv += nn.weights_list[i - 1][k][j].weight * i_neuron.output
+			for j, i_neuron in nn.layers_list[i - 1] { // For each neuron in the concerned input layer
+				o_neuron.nactiv += nn.weights_list[i - 1][j][k].weight * i_neuron.output
 			}
 			o_neuron.nactiv += o_neuron.bias
-			layer[j].output = nn.activ_func(o_neuron.nactiv)
+			layer[k].output = nn.activ_func(o_neuron.nactiv)
 		}
 	}
 	return get_outputs(nn.layers_list[nn.nb_neurones.len - 1])
