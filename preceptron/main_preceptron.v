@@ -26,7 +26,7 @@ mut:
 
 pub struct NeuralNetwork {
 	learning_rate f64
-	nb_neurones   []int
+	nb_neurons   []int
 	activ_func    fn (f64) f64 = sigmoid
 
 	print_epoch int
@@ -43,7 +43,7 @@ mut:
 	// For backprop:
 	global_cost            f64
 	training_inputs        [][]f64
-	excpd_training_outputs [][]f64
+	expected_training_outputs [][]f64
 	best_cost              f64 = 100000000000
 }
 
@@ -77,16 +77,16 @@ pub fn (mut nn NeuralNetwork) init() {
 		nn.layers_list = base_layers_list_good
 		nn.weights_list = base_weights_listgood
 	} else { // If it's a new nn
-		nn.weights_list = [][][]Weight{len: nn.nb_neurones.len - 1}
+		nn.weights_list = [][][]Weight{len: nn.nb_neurons.len - 1}
 
 		for i, mut layer in nn.weights_list {
-			for _ in 0 .. nn.nb_neurones[i] {
-				layer << []Weight{len: nn.nb_neurones[i + 1]}
+			for _ in 0 .. nn.nb_neurons[i] {
+				layer << []Weight{len: nn.nb_neurons[i + 1]}
 			}
 		}
 
 		nn.layers_list = [][]Neuron{}
-		for nb in nn.nb_neurones {
+		for nb in nn.nb_neurons {
 			nn.layers_list << []Neuron{len: nb}
 		}
 
@@ -116,7 +116,7 @@ pub fn (mut nn NeuralNetwork) fprop_value(inputs []f64) []f64 {
 			}
 		}
 	}
-	return get_outputs(nn.layers_list[nn.nb_neurones.len - 1])
+	return get_outputs(nn.layers_list[nn.nb_neurons.len - 1])
 }
 
 /*

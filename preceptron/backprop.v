@@ -49,7 +49,7 @@ pub fn (mut nn NeuralNetwork) train_backprop(nb_epochs u64) {
 	if need_to_save && nn.save_path != '' {
 		println(' Saving the progress !')
 		file := 'cost=${cost_to_save}\nweights=${get_weights(weights_to_save)}\nbiases=${get_biases(layers_to_save)}'
-		os.write_file(nn.save_path + nn.nb_neurones.str() + '.nntoml', file) or { panic(err) }
+		os.write_file(nn.save_path + nn.nb_neurons.str() + '.nntoml', file) or { panic(err) }
 	}
 }
 
@@ -61,8 +61,8 @@ fn (mut nn NeuralNetwork) backprop(index int) {
 	nn.fprop_value(nn.training_inputs[index])
 
 	// Cost for the print
-	for i, neuron in nn.layers_list[nn.nb_neurones.len - 1] { // for each output
-		tmp := neuron.output - nn.excpd_training_outputs[index][i]
+	for i, neuron in nn.layers_list[nn.nb_neurons.len - 1] { // for each output
+		tmp := neuron.output - nn.expected_training_outputs[index][i]
 		nn.global_cost += tmp * tmp
 	}
 
@@ -75,33 +75,33 @@ fn (mut nn NeuralNetwork) backprop(index int) {
 	}
 
 	// deltaC/deltaA(last)
-	for i, mut neuron in nn.layers_list[nn.nb_neurones.len - 1] { // for each output
-		neuron.cost = 2.0 * (neuron.output - nn.excpd_training_outputs[index][i])
+	for i, mut neuron in nn.layers_list[nn.nb_neurons.len - 1] { // for each output
+		neuron.cost = 2.0 * (neuron.output - nn.expected_training_outputs[index][i])
 	}
 
 	// deltaC/deltaW(last)
-	for j, mut weight_list in nn.weights_list[nn.nb_neurones.len - 2] { // j is the nb of the input neuron
+	for j, mut weight_list in nn.weights_list[nn.nb_neurons.len - 2] { // j is the nb of the input neuron
 		for k, mut weight in weight_list { // k is the nb of the output neuron
-			weight.cost += nn.layers_list[nn.nb_neurones.len - 2][j].output * nn.layers_list[nn.nb_neurones.len - 1][k].nactiv * nn.layers_list[nn.nb_neurones.len - 1][k].cost
+			weight.cost += nn.layers_list[nn.nb_neurons.len - 2][j].output * nn.layers_list[nn.nb_neurons.len - 1][k].nactiv * nn.layers_list[nn.nb_neurons.len - 1][k].cost
 		}
 	}
 
 	// deltaC/deltaB(last)
-	for mut neuron in nn.layers_list[nn.nb_neurones.len - 1] {
+	for mut neuron in nn.layers_list[nn.nb_neurons.len - 1] {
 		neuron.b_cost += neuron.nactiv * neuron.cost
 	}
 
 	// deltaC/deltaA(i)
-	for i := nn.nb_neurones.len - 2; i > 0; i-- { // for each hidden layer but starting at the end
-		for j in 0 .. nn.nb_neurones[i] { // for each neuron of the layer
-			for k in 0 .. nn.nb_neurones[i + 1] { // for each neuron of the next layer
+	for i := nn.nb_neurons.len - 2; i > 0; i-- { // for each hidden layer but starting at the end
+		for j in 0 .. nn.nb_neurons[i] { // for each neuron of the layer
+			for k in 0 .. nn.nb_neurons[i + 1] { // for each neuron of the next layer
 				nn.layers_list[i][j].cost += nn.weights_list[i][j][k].weight * nn.layers_list[i + 1][k].nactiv * nn.layers_list[
 					i + 1][k].cost
 			}
 		}
 	}
 
-	for i in 1 .. nn.nb_neurones.len - 1 { // for each hidden layer (output already done and nothing to do on input)
+	for i in 1 .. nn.nb_neurons.len - 1 { // for each hidden layer (output already done and nothing to do on input)
 		// Weights
 		for j, mut weight_list in nn.weights_list[i - 1] { // j = nb input neuron
 			for k, mut weight in weight_list { // k = nb output neuron

@@ -30,11 +30,11 @@ fn (mut nn NeuralNetwork) set_rd_wb_values() {
 
 pub fn (mut nn NeuralNetwork) softmax() []Neuron {
 	mut sum := 0.0
-	for neuron in nn.layers_list[nn.nb_neurones.len - 1] {
+	for neuron in nn.layers_list[nn.nb_neurons.len - 1] {
 		sum += neuron.output
 	}
-	for mut neuron in nn.layers_list[nn.nb_neurones.len - 1] {
+	for mut neuron in nn.layers_list[nn.nb_neurons.len - 1] {
 		neuron.output /= sum
 	}
-	return nn.layers_list[nn.nb_neurones.len - 1]
+	return nn.layers_list[nn.nb_neurons.len - 1]
 }
