@@ -7,18 +7,18 @@ import rand as rd
 [direct_array_access]
 fn (mut nn NeuralNetwork) set_rd_wb_values(){
 	//Weights
-	for mut hw_wc_list in nn.weights_list{
-		for mut weights_list in hw_wc_list[0]{
+	for mut layer in nn.weights_list{
+		for mut weights_list in layer{
 			for mut weight in weights_list{
-				weight = rd.f64_in_range(-1, 1)or{panic(err)}
+				weight.weight = rd.f64_in_range(-1, 1)or{panic(err)}
 			}
 		}	
 	}
 
 	//Biases 
-	for mut neuron in nn.layers_list{
-		for mut bias in neuron[0]{
-			bias = rd.f64_in_range(-1, 1)or{panic(err)}
+	for mut layer in nn.layers_list{
+		for mut neuron in layer{
+			neuron.bias = rd.f64_in_range(-1, 1)or{panic(err)}
 		}
 	}
 }
@@ -40,13 +40,13 @@ fn (mut nn NeuralNetwork) randomise_i_exp_o(){ // To shuffle the dataset I think
 	}
 }
 
-pub fn (mut nn NeuralNetwork) softmax() []f64{
+pub fn (mut nn NeuralNetwork) softmax() []Neuron{
 	mut sum := 0.0
-	for value in nn.layers_list[nn.nb_neurones.len-1][3]{
-		sum += value
+	for neuron in nn.layers_list[nn.nb_neurones.len-1]{
+		sum += neuron.output
 	}
-	for mut value in nn.layers_list[nn.nb_neurones.len-1][3]{
-		value /= sum
+	for mut neuron in nn.layers_list[nn.nb_neurones.len-1]{
+		neuron.output /= sum
 	}
-    return nn.layers_list[nn.nb_neurones.len-1][3]
+    return nn.layers_list[nn.nb_neurones.len-1]
 }
