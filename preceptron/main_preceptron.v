@@ -9,7 +9,6 @@ Main functions and structs for the neural networks
 // TODO	:
 // minibatches ?
 // mesure the time of the backprop in the print ?
-
 pub struct Neuron {
 mut:
 	bias   f64
@@ -105,14 +104,16 @@ pub fn (mut nn NeuralNetwork) fprop_value(inputs []f64) []f64 {
 	for i, input in inputs {
 		nn.layers_list[0][i].output = input
 	}
-	for i, mut layer in nn.layers_list[1..] { // For each layer (hidden & output)
-		for k, mut o_neuron in layer { // For each neuron in the concerned output layer
-			o_neuron.nactiv = 0
-			for j, i_neuron in nn.layers_list[i - 1] { // For each neuron in the concerned input layer
-				o_neuron.nactiv += nn.weights_list[i - 1][j][k].weight * i_neuron.output
+	for i, mut hidd_lay in nn.layers_list { // For each layer
+		if i > 0 { // ignore the input layer
+			for j, mut o_neuron in hidd_lay { // For each neuron in the output layer
+				o_neuron.nactiv = 0
+				for k, i_neuron in nn.layers_list[i - 1] { // For each neuron in the input layer
+					o_neuron.nactiv += nn.weights_list[i - 1][k][j].weight * i_neuron.output
+				}
+				o_neuron.nactiv += o_neuron.bias
+				hidd_lay[j].output = nn.activ_func(o_neuron.nactiv)
 			}
-			o_neuron.nactiv += o_neuron.bias
-			layer[k].output = nn.activ_func(o_neuron.nactiv)
 		}
 	}
 	return get_outputs(nn.layers_list[nn.nb_neurones.len - 1])
