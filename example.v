@@ -14,6 +14,7 @@ fn main() {
 		training_inputs: [[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]]
 		expected_training_outputs: [[0.0], [1.0], [1.0], [0.0]]
 	}
+	
 	neunet.init()
 
 	print(neunet.fprop_value([0.0, 0.0]))
