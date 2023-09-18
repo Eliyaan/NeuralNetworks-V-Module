@@ -8,7 +8,7 @@ Main functions and structs for the neural networks
 
 // TODO	:
 // minibatches ?
-// mesure the time of the backprop in the print ?
+
 pub struct Neuron {
 mut:
 	bias   f64
@@ -49,6 +49,31 @@ mut:
 
 /*
 Initialise the neural network
+Input	: name -> name of the file to load
+*/
+[direct_array_access]
+pub fn (mut nn NeuralNetwork) load_dataset(name string) {
+	file := toml.parse_file(name) or {panic(err)}
+	base_t_i_list := file.value("training_inputs").array()
+	base_e_t_o_list := file.value("expected_training_outputs").array()
+	
+	nn.training_inputs = [][]f64{}
+	nn.expected_training_outputs = [][]f64{}
+	for i, t_i in base_t_i_list{
+		nn.training_inputs << []f64{}
+		for value in t_i.array(){
+			nn.training_inputs[i] << value.f64()
+		}
+	}
+	for i, e_t_o in base_e_t_o_list{
+		nn.expected_training_outputs << []f64{}
+		for value in e_t_o.array(){
+			nn.expected_training_outputs[i] << value.f64()
+		}
+	}
+}
+/*
+or
 */
 [direct_array_access]
 pub fn (mut nn NeuralNetwork) init() {
