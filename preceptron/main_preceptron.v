@@ -27,14 +27,14 @@ mut:
 pub struct NeuralNetwork {
 	learning_rate f64
 	nb_neurons   []int
-	activ_func    fn (f64) f64 = sigmoid
+	activ_funcs    []fn (f64) f64
 
 	print_epoch int
 
 	save_path string
 	load_path string
 
-	deriv_activ_func fn (f64) f64 = dsig
+	deriv_activ_funcs []fn (f64) f64
 mut:
 	// [layer_nbr][input_neuron_nbr][output_neuron_nbr]
 	weights_list [][][]Weight
@@ -51,7 +51,6 @@ mut:
 Initialise the neural network
 Input	: name -> name of the file to load
 */
-[direct_array_access]
 pub fn (mut nn NeuralNetwork) init() {
 	if nn.load_path != '' {
 		file := toml.parse_file(nn.load_path) or { panic(err) }
@@ -98,7 +97,7 @@ pub fn (mut nn NeuralNetwork) init() {
 /*
 To load the data from a toml file
 */
-[direct_array_access]
+//[direct_array_access]
 pub fn (mut nn NeuralNetwork) load_dataset(name string) {
 	file := toml.parse_file(name) or {panic(err)}
 	base_t_i_list := file.value("training_inputs").array()
@@ -125,7 +124,7 @@ For doing a simple forward propagation
 Input	: array of values (1 value by input neuron)
 Output	: array of the outputs
 */
-[direct_array_access; inline]
+//[direct_array_access]
 pub fn (mut nn NeuralNetwork) fprop_value(inputs []f64) []f64 {
 	for i, input in inputs {
 		nn.layers_list[0][i].output = input
@@ -138,7 +137,7 @@ pub fn (mut nn NeuralNetwork) fprop_value(inputs []f64) []f64 {
 					o_neuron.nactiv += nn.weights_list[i - 1][k][j].weight * i_neuron.output
 				}
 				o_neuron.nactiv += o_neuron.bias
-				o_neuron.output = nn.activ_func(o_neuron.nactiv)
+				o_neuron.output = nn.activ_funcs[i-1](o_neuron.nactiv)
 			}
 		}
 	}
@@ -149,7 +148,7 @@ pub fn (mut nn NeuralNetwork) fprop_value(inputs []f64) []f64 {
 Input	: Neuron array
 Output	: The outputs of the neuron array
 */
-[direct_array_access; inline]
+//[direct_array_access; inline]
 pub fn get_outputs(neurons []Neuron) []f64 {
 	return []f64{len: neurons.len, init: neurons[index].output}
 }
@@ -158,7 +157,7 @@ pub fn get_outputs(neurons []Neuron) []f64 {
 Input	: Neural network neuron array
 Output	: The biases of the neurons
 */
-[direct_array_access; inline]
+//[direct_array_access; inline]
 pub fn get_biases(neurons [][]Neuron) [][]f64 {
 	mut biases := [][]f64{}
 	for layer in neurons {
@@ -171,7 +170,7 @@ pub fn get_biases(neurons [][]Neuron) [][]f64 {
 Input	: Neural network weights array
 Output	: The weights values of the weights
 */
-[direct_array_access; inline]
+//[direct_array_access; inline]
 pub fn get_weights(weights_objs [][][]Weight) [][][]f64 {
 	mut weights := [][][]f64{len: weights_objs.len}
 	for l, mut layer in weights {
