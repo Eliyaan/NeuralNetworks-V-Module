@@ -11,7 +11,6 @@ Backpropagation implementation
 Backprop training loop
 Input	: number of epochs that will run
 */
-//[direct_array_access]
 pub fn (mut nn NeuralNetwork) train_backprop(nb_epochs u64) {
 	mut need_to_save := false
 	mut cost_to_save := 0.0
@@ -56,7 +55,7 @@ pub fn (mut nn NeuralNetwork) train_backprop(nb_epochs u64) {
 /*
 Calculates the costs of each wieghts and biases
 */
-[direct_array_access]
+//[direct_array_access]
 fn (mut nn NeuralNetwork) backprop(index int) {
 	nn.fprop_value(nn.training_inputs[index])
 
@@ -121,7 +120,6 @@ fn (mut nn NeuralNetwork) backprop(index int) {
 /*
 Apply the modifications based on the cost calculated in the backprop
 */
-[direct_array_access]
 fn (mut nn NeuralNetwork) apply_delta() {
 	// Weights
 	for mut layer in nn.weights_list {
@@ -145,7 +143,6 @@ fn (mut nn NeuralNetwork) apply_delta() {
 /*
 Reset the costs that aren't reset in the backprop
 */
-[direct_array_access; inline]
 fn (mut nn NeuralNetwork) neurons_costs_reset() {
 	for mut layer in nn.layers_list[1..] {
 		for mut neuron in layer {

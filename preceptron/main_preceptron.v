@@ -97,7 +97,6 @@ pub fn (mut nn NeuralNetwork) init() {
 /*
 To load the data from a toml file
 */
-//[direct_array_access]
 pub fn (mut nn NeuralNetwork) load_dataset(name string) {
 	file := toml.parse_file(name) or {panic(err)}
 	base_t_i_list := file.value("training_inputs").array()
@@ -148,7 +147,6 @@ pub fn (mut nn NeuralNetwork) fprop_value(inputs []f64) []f64 {
 Input	: Neuron array
 Output	: The outputs of the neuron array
 */
-//[direct_array_access; inline]
 pub fn get_outputs(neurons []Neuron) []f64 {
 	return []f64{len: neurons.len, init: neurons[index].output}
 }
@@ -157,7 +155,6 @@ pub fn get_outputs(neurons []Neuron) []f64 {
 Input	: Neural network neuron array
 Output	: The biases of the neurons
 */
-//[direct_array_access; inline]
 pub fn get_biases(neurons [][]Neuron) [][]f64 {
 	mut biases := [][]f64{}
 	for layer in neurons {
@@ -170,7 +167,6 @@ pub fn get_biases(neurons [][]Neuron) [][]f64 {
 Input	: Neural network weights array
 Output	: The weights values of the weights
 */
-//[direct_array_access; inline]
 pub fn get_weights(weights_objs [][][]Weight) [][][]f64 {
 	mut weights := [][][]f64{len: weights_objs.len}
 	for l, mut layer in weights {
