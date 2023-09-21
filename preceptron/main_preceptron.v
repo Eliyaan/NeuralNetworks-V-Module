@@ -25,6 +25,7 @@ mut:
 }
 
 pub struct NeuralNetwork {
+pub:
 	learning_rate f64
 	nb_neurons   []int
 	activ_funcs    []fn (f64) f64
@@ -35,7 +36,7 @@ pub struct NeuralNetwork {
 	load_path string
 
 	deriv_activ_funcs []fn (f64) f64
-mut:
+pub mut:
 	// [layer_nbr][input_neuron_nbr][output_neuron_nbr]
 	weights_list [][][]Weight
 	// [layer_nbr][neuron_nbr]
@@ -44,6 +45,8 @@ mut:
 	global_cost            f64
 	training_inputs        [][]f64
 	expected_training_outputs [][]f64
+	test_inputs        [][]f64
+	expected_test_outputs [][]f64
 	best_cost              f64 = 100000000000
 }
 
@@ -101,6 +104,8 @@ pub fn (mut nn NeuralNetwork) load_dataset(name string) {
 	file := toml.parse_file(name) or {panic(err)}
 	base_t_i_list := file.value("training_inputs").array()
 	base_e_t_o_list := file.value("expected_training_outputs").array()
+	base_test_i_list := file.value("test_inputs").array()
+	base_e_test_o_list := file.value("expected_test_outputs").array()
 	
 	nn.training_inputs = [][]f64{}
 	nn.expected_training_outputs = [][]f64{}
@@ -114,6 +119,21 @@ pub fn (mut nn NeuralNetwork) load_dataset(name string) {
 		nn.expected_training_outputs << []f64{}
 		for value in e_t_o.array(){
 			nn.expected_training_outputs[i] << value.f64()
+		}
+	}
+
+	nn.test_inputs = [][]f64{}
+	nn.expected_test_outputs = [][]f64{}
+	for i, test_i in base_test_i_list{
+		nn.test_inputs << []f64{}
+		for value in test_i.array(){
+			nn.test_inputs[i] << value.f64()
+		}
+	}
+	for i, e_test_o in base_e_test_o_list{
+		nn.expected_test_outputs << []f64{}
+		for value in e_test_o.array(){
+			nn.expected_test_outputs[i] << value.f64()
 		}
 	}
 }
@@ -141,6 +161,17 @@ pub fn (mut nn NeuralNetwork) fprop_value(inputs []f64) []f64 {
 		}
 	}
 	return get_outputs(nn.layers_list[nn.nb_neurons.len - 1])
+}
+
+pub fn (mut nn NeuralNetwork) test_unseen_data(){
+	nn.global_cost = 0
+	for index, inputs in nn.test_inputs{
+		for i, output in nn.fprop_value(inputs) { // for each output
+			tmp := output - nn.expected_training_outputs[index][i]
+			nn.global_cost += tmp * tmp
+		}
+	}
+	println("\nTest cost: ${nn.global_cost}")
 }
 
 /*

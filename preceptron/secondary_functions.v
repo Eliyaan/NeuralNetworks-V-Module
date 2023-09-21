@@ -10,7 +10,7 @@ Other useful functions
 To initialise the nn with random weights and biases
 */
 [direct_array_access; inline]
-fn (mut nn NeuralNetwork) set_rd_wb_values() {
+pub fn (mut nn NeuralNetwork) set_rd_wb_values() {
 	// Weights
 	for mut layer in nn.weights_list {
 		for mut weights_list in layer {

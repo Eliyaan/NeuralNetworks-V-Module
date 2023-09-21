@@ -17,17 +17,15 @@ fn main() {
 	neunet.init()
 	neunet.load_dataset("training_data.toml")
 
-	print(neunet.fprop_value([0.0, 0.0]))
-	print(neunet.fprop_value([0.0, 1.0]))
-	print(neunet.fprop_value([1.0, 0.0]))
-	print(neunet.fprop_value([1.0, 1.0]))
-
+	
+	neunet.test_unseen_data()
 
 	neunet.train_backprop(2000)
 
+	neunet.test_unseen_data()
 
-	print(neunet.fprop_value([0.0, 0.0]))
-	print(neunet.fprop_value([0.0, 1.0]))
-	print(neunet.fprop_value([1.0, 0.0]))
-	print(neunet.fprop_value([1.0, 1.0]))
+	print(neunet.fprop_value(neunet.test_inputs[0]))
+	print(neunet.fprop_value(neunet.test_inputs[1]))
+	print(neunet.fprop_value(neunet.test_inputs[2]))
+	print(neunet.fprop_value(neunet.test_inputs[3]))
 }
