@@ -1,4 +1,4 @@
-# preceptron_v_module
+# Neural Networks V Module
 A V module to use multi-layer neural networks. Includes backpropagation but you can train them the way you want. If you have any questions or suggestions I'd be happy to read them !
 
 An example can be found in example.v (It covers nearly the whole module but if you have any question, dont mind asking me).
