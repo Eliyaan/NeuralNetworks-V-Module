@@ -1,7 +1,8 @@
 module preceptron
 
-import os
+// import os
 import time
+import rand as rd
 
 /*
 Backpropagation implementation
@@ -12,14 +13,13 @@ Backprop training loop
 Input	: number of epochs that will run
 */
 pub fn (mut nn NeuralNetwork) train_backprop(nb_epochs u64) {
-	mut need_to_save := false
-	mut cost_to_save := 0.0
-	mut weights_to_save := [][][]Weight{}
-	mut layers_to_save := [][]Neuron{}
-
 	mut timestamp := time.now()
-
-	for epoch in 0 .. nb_epochs {
+	mut print_cost := 0.0
+	mut accuracy := 0.0
+	mut print_accu := 0.0
+	println('\n\nActual time: ${timestamp}')
+	for epoch in 1 .. nb_epochs + 1 {
+		accuracy = 0.0
 		if epoch > 0 {
 			nn.apply_delta()
 		}
@@ -27,35 +27,78 @@ pub fn (mut nn NeuralNetwork) train_backprop(nb_epochs u64) {
 		for i in 0 .. nn.training_inputs.len {
 			nn.neurons_costs_reset()
 			nn.backprop(i)
-		}
-		if nn.print_epoch > 0 {
-			if epoch % u64(nn.print_epoch) == 0 {
-				println('\nEpoch: ${epoch} Global Cost: ${nn.global_cost} Time Elapsed: ${(time.now() - timestamp)}')
-				timestamp = time.now()
+			if nn.classifier {
+				accuracy += if nn.test_value_classifier(i, false) { 1 } else { 0 }
 			}
 		}
-		if nn.best_cost / nn.global_cost > 1.0 {
-			need_to_save = true
-			cost_to_save = nn.global_cost
-			weights_to_save = nn.weights_list.clone()
-			layers_to_save = nn.layers_list.clone()
-			nn.best_cost = nn.global_cost
+		nn.global_cost /= nn.training_inputs.len
+		print_cost += nn.global_cost
+		accuracy /= nn.training_inputs.len
+		print_accu += accuracy
+		if nn.print_epoch > 0 {
+			if epoch % u64(nn.print_epoch) == 0 {
+				if nn.classifier {
+					println('\nEpoch: ${epoch} - Mean Cost: ${print_cost / nn.print_epoch} - Last Cost: ${nn.global_cost} - Accuracy: ${(print_accu / nn.print_epoch * 100):.2}% - Time Elapsed: ${(time.now() - timestamp)}')
+				} else {
+					println('\nEpoch: ${epoch} - Mean Cost: ${print_cost / nn.print_epoch} - Last Cost: ${nn.global_cost} - Time Elapsed: ${(time.now() - timestamp)}')
+				}
+				timestamp = time.now()
+				print_cost = 0
+				print_accu = 0
+			}
 		}
 	}
-	if nn.print_epoch > 0 {
-		println('____________________________________________________________\nFinal Results: \nCost: ${nn.global_cost}')
+	println('\nActual time: ${timestamp}\n')
+}
+
+pub fn (mut nn NeuralNetwork) train_backprop_minibatches(nb_epochs u64, batch_size int) {
+	mut timestamp := time.now()
+	mut print_cost := 0.0
+	mut accuracy := 0.0
+	mut print_accu := 0.0
+	println('\n\nActual time: ${timestamp}')
+	for epoch in 1 .. nb_epochs + 1 {
+		accuracy = 0.0
+		if epoch > 1 {
+			nn.apply_delta()
+		}
+		nn.global_cost = 0.0 // reset the cost before the training of this epoch
+		nn.mini_batch_start = rd.int_in_range(0, nn.training_inputs.len - batch_size) or {
+			panic(err)
+		}
+		nn.mini_batch_end = nn.mini_batch_start + batch_size
+		for i in nn.mini_batch_start .. nn.mini_batch_end {
+			nn.neurons_costs_reset()
+			nn.backprop(i)
+			if nn.classifier {
+				accuracy += if nn.test_value_classifier(i, false) { 1 } else { 0 }
+			}
+		}
+		nn.global_cost /= batch_size
+		print_cost += nn.global_cost
+		accuracy /= batch_size
+		print_accu += accuracy
+		if nn.print_epoch > 0 {
+			if epoch % u64(nn.print_epoch) == 0 {
+				if nn.classifier {
+					println('\nEpoch: ${epoch} - Global Cost: ${print_cost / nn.print_epoch} - Accuracy: ${(print_accu / nn.print_epoch * 100):.2}% - Time Elapsed: ${(time.now() - timestamp)}')
+				} else {
+					println('\nEpoch: ${epoch} - Global Cost: ${print_cost / nn.print_epoch} - Time Elapsed: ${(time.now() - timestamp)}')
+				}
+				nn.test_unseen_data()
+				timestamp = time.now()
+				print_cost = 0
+				print_accu = 0
+			}
+		}
 	}
-	if need_to_save && nn.save_path != '' {
-		println('Saving the progress !')
-		file := 'cost=${cost_to_save}\nweights=${get_weights(weights_to_save)}\nbiases=${get_biases(layers_to_save)}'
-		os.write_file(nn.save_path + nn.nb_neurons.str() + '.nntoml', file) or { panic(err) }
-	}
+	println('\nActual time: ${timestamp}\n')
 }
 
 /*
 Calculates the costs of each wieghts and biases
 */
-//[direct_array_access]
+[direct_array_access]
 pub fn (mut nn NeuralNetwork) backprop(index int) {
 	nn.fprop_value(nn.training_inputs[index])
 
@@ -70,7 +113,7 @@ pub fn (mut nn NeuralNetwork) backprop(index int) {
 	for i, mut layer in nn.layers_list {
 		if i > 0 {
 			for mut neuron in layer {
-				neuron.nactiv = nn.deriv_activ_funcs[i-1](neuron.nactiv)
+				neuron.nactiv = nn.deriv_activ_funcs[i - 1](neuron.nactiv)
 			}
 		}
 	}
@@ -125,7 +168,7 @@ pub fn (mut nn NeuralNetwork) apply_delta() {
 	for mut layer in nn.weights_list {
 		for mut weight_list in layer {
 			for mut weight in weight_list {
-				weight.weight -= weight.cost * nn.learning_rate
+				weight.weight -= weight.cost / nn.training_inputs.len * nn.learning_rate
 				weight.cost = 0.0
 			}
 		}
@@ -134,7 +177,7 @@ pub fn (mut nn NeuralNetwork) apply_delta() {
 	// Biases
 	for mut layer in nn.layers_list[1..] { // for each layer excluding the input layer
 		for mut neuron in layer {
-			neuron.bias -= neuron.b_cost * nn.learning_rate
+			neuron.bias -= neuron.b_cost / nn.training_inputs.len * nn.learning_rate
 			neuron.b_cost = 0.0
 		}
 	}

@@ -29,12 +29,12 @@ pub fn drelu(value f64) f64 {
 
 [inline]
 pub fn leaky_relu(value f64) f64 {
-	return if value < 0 { value * 0.01 } else { value }
+	return if value < 0 { value * 0.1 } else { value }
 }
 
 [inline]
 pub fn dleaky_relu(value f64) f64 {
-	return if value < 0 { 0.01 } else { 1.0 }
+	return if value < 0 { 0.1 } else { 1.0 }
 }
 
 [inline]

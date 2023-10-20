@@ -1,13 +1,12 @@
 module preceptron
 
 import toml
+import os
+import rand as rd
 
 /*
 Main functions and structs for the neural networks
 */
-
-// TODO	:
-// minibatches ?
 
 pub struct Neuron {
 mut:
@@ -25,38 +24,44 @@ mut:
 }
 
 pub struct NeuralNetwork {
-pub:
+pub mut:
 	learning_rate f64
-	nb_neurons   []int
-	activ_funcs    []fn (f64) f64
+	nb_neurons    []int
+	activ_funcs   []fn (f64) f64
 
 	print_epoch int
 
-	save_path string
-	load_path string
-
 	deriv_activ_funcs []fn (f64) f64
-pub mut:
+
+	w_random_interval f64 = 0.005
+	b_random_interval f64 = 0.005
 	// [layer_nbr][input_neuron_nbr][output_neuron_nbr]
 	weights_list [][][]Weight
 	// [layer_nbr][neuron_nbr]
 	layers_list [][]Neuron
 	// For backprop:
-	global_cost            f64
-	training_inputs        [][]f64
+	global_cost               f64
+	test_cost                 f64 = 10000000
+	training_inputs           [][]f64
 	expected_training_outputs [][]f64
-	test_inputs        [][]f64
-	expected_test_outputs [][]f64
-	best_cost              f64 = 100000000000
+	test_inputs               [][]f64
+	expected_test_outputs     [][]f64
+	best_cost                 f64 = 100000000000
+	mini_batch_start          int = -1
+	mini_batch_end            int = -1
+	classifier                bool
+
+	seed []u32 = [u32(0), 0]
 }
 
 /*
 Initialise the neural network
 Input	: name -> name of the file to load
 */
-pub fn (mut nn NeuralNetwork) init() {
-	if nn.load_path != '' {
-		file := toml.parse_file(nn.load_path) or { panic(err) }
+pub fn (mut nn NeuralNetwork) init(load_path string) {
+	rd.seed(nn.seed)
+	if load_path != '' {
+		file := toml.parse_file(load_path) or { panic(err) }
 		nn.best_cost = file.value('cost').f64()
 		base_weights_list := file.value('weights').array()
 		base_layers_list := file.value('biases').array()
@@ -101,41 +106,112 @@ pub fn (mut nn NeuralNetwork) init() {
 To load the data from a toml file
 */
 pub fn (mut nn NeuralNetwork) load_dataset(name string) {
-	file := toml.parse_file(name) or {panic(err)}
-	base_t_i_list := file.value("training_inputs").array()
-	base_e_t_o_list := file.value("expected_training_outputs").array()
-	base_test_i_list := file.value("test_inputs").array()
-	base_e_test_o_list := file.value("expected_test_outputs").array()
-	
+	file := toml.parse_file(name) or { panic(err) }
+	base_t_i_list := file.value('training_inputs').array()
+	base_e_t_o_list := file.value('expected_training_outputs').array()
+	base_test_i_list := file.value('test_inputs').array()
+	base_e_test_o_list := file.value('expected_test_outputs').array()
+
 	nn.training_inputs = [][]f64{}
 	nn.expected_training_outputs = [][]f64{}
-	for i, t_i in base_t_i_list{
+	for i, t_i in base_t_i_list {
 		nn.training_inputs << []f64{}
-		for value in t_i.array(){
+		for value in t_i.array() {
 			nn.training_inputs[i] << value.f64()
 		}
 	}
-	for i, e_t_o in base_e_t_o_list{
+	for i, e_t_o in base_e_t_o_list {
 		nn.expected_training_outputs << []f64{}
-		for value in e_t_o.array(){
+		for value in e_t_o.array() {
 			nn.expected_training_outputs[i] << value.f64()
 		}
 	}
+	assert nn.training_inputs[0].len == nn.nb_neurons[0]
+	assert nn.expected_training_outputs[0].len == nn.nb_neurons[nn.nb_neurons.len - 1]
+	assert nn.training_inputs.len == nn.expected_training_outputs.len
 
 	nn.test_inputs = [][]f64{}
 	nn.expected_test_outputs = [][]f64{}
-	for i, test_i in base_test_i_list{
+	for i, test_i in base_test_i_list {
 		nn.test_inputs << []f64{}
-		for value in test_i.array(){
+		for value in test_i.array() {
 			nn.test_inputs[i] << value.f64()
 		}
 	}
-	for i, e_test_o in base_e_test_o_list{
+	for i, e_test_o in base_e_test_o_list {
 		nn.expected_test_outputs << []f64{}
-		for value in e_test_o.array(){
+		for value in e_test_o.array() {
 			nn.expected_test_outputs[i] << value.f64()
 		}
 	}
+	assert nn.test_inputs[0].len == nn.nb_neurons[0]
+	assert nn.expected_test_outputs[0].len == nn.nb_neurons[nn.nb_neurons.len - 1]
+	assert nn.test_inputs.len == nn.expected_test_outputs.len
+}
+
+/*
+Load data from the mnist dataset
+0 < nb_training <= 60000
+0 < nb_tests <= 10000
+*/
+[direct_array_access]
+pub fn (mut nn NeuralNetwork) load_mnist(nb_training int, nb_tests int) {
+	println('Loading mnist...')
+	test_labels := os.open('mnist\\t10k-labels-idx1-ubyte') or { panic(err) }
+	test_images := os.open('mnist\\t10k-images-idx3-ubyte') or { panic(err) }
+	nn.test_inputs = [][]f64{}
+	nn.expected_test_outputs = [][]f64{}
+	for i in 0 .. nb_tests {
+		nn.test_inputs << [
+			scale_and_process_img(test_images.read_bytes_at(784, i * 784 + 16).map(f64(it)),
+				28, 28 + rd.int_in_range(-7, 8) or { panic(err) }, 28 + rd.int_in_range(-7, 8) or {
+				panic(err)
+			}, true),
+		]
+		nn.expected_test_outputs << [
+			match test_labels.read_bytes_at(1, i + 8)[0] {
+				0 { [f64(1), 0, 0, 0, 0, 0, 0, 0, 0, 0] }
+				1 { [f64(0), 1, 0, 0, 0, 0, 0, 0, 0, 0] }
+				2 { [f64(0), 0, 1, 0, 0, 0, 0, 0, 0, 0] }
+				3 { [f64(0), 0, 0, 1, 0, 0, 0, 0, 0, 0] }
+				4 { [f64(0), 0, 0, 0, 1, 0, 0, 0, 0, 0] }
+				5 { [f64(0), 0, 0, 0, 0, 1, 0, 0, 0, 0] }
+				6 { [f64(0), 0, 0, 0, 0, 0, 1, 0, 0, 0] }
+				7 { [f64(0), 0, 0, 0, 0, 0, 0, 1, 0, 0] }
+				8 { [f64(0), 0, 0, 0, 0, 0, 0, 0, 1, 0] }
+				9 { [f64(0), 0, 0, 0, 0, 0, 0, 0, 0, 1] }
+				else { panic('Match test outputs') }
+			},
+		]
+	}
+	train_labels := os.open('mnist\\train-labels-idx1-ubyte') or { panic(err) }
+	train_images := os.open('mnist\\train-images-idx3-ubyte') or { panic(err) }
+	nn.training_inputs = [][]f64{}
+	nn.expected_training_outputs = [][]f64{}
+	for i in 0 .. nb_training {
+		nn.training_inputs << [
+			scale_and_process_img(train_images.read_bytes_at(784, i * 784 + 16).map(f64(it)),
+				28, 28 + rd.int_in_range(-7, 8) or { panic(err) }, 28 + rd.int_in_range(-7, 8) or {
+				panic(err)
+			}, true),
+		]
+		nn.expected_training_outputs << [
+			match train_labels.read_bytes_at(1, i + 8)[0] {
+				0 { [f64(1), 0, 0, 0, 0, 0, 0, 0, 0, 0] }
+				1 { [f64(0), 1, 0, 0, 0, 0, 0, 0, 0, 0] }
+				2 { [f64(0), 0, 1, 0, 0, 0, 0, 0, 0, 0] }
+				3 { [f64(0), 0, 0, 1, 0, 0, 0, 0, 0, 0] }
+				4 { [f64(0), 0, 0, 0, 1, 0, 0, 0, 0, 0] }
+				5 { [f64(0), 0, 0, 0, 0, 1, 0, 0, 0, 0] }
+				6 { [f64(0), 0, 0, 0, 0, 0, 1, 0, 0, 0] }
+				7 { [f64(0), 0, 0, 0, 0, 0, 0, 1, 0, 0] }
+				8 { [f64(0), 0, 0, 0, 0, 0, 0, 0, 1, 0] }
+				9 { [f64(0), 0, 0, 0, 0, 0, 0, 0, 0, 1] }
+				else { panic('bu') }
+			},
+		]
+	}
+	println('Finished loading mnist!')
 }
 
 /*
@@ -143,7 +219,7 @@ For doing a simple forward propagation
 Input	: array of values (1 value by input neuron)
 Output	: array of the outputs
 */
-//[direct_array_access]
+[direct_array_access]
 pub fn (mut nn NeuralNetwork) fprop_value(inputs []f64) []f64 {
 	for i, input in inputs {
 		nn.layers_list[0][i].output = input
@@ -156,22 +232,33 @@ pub fn (mut nn NeuralNetwork) fprop_value(inputs []f64) []f64 {
 					o_neuron.nactiv += nn.weights_list[i - 1][k][j].weight * i_neuron.output
 				}
 				o_neuron.nactiv += o_neuron.bias
-				o_neuron.output = nn.activ_funcs[i-1](o_neuron.nactiv)
+				o_neuron.output = nn.activ_funcs[i - 1](o_neuron.nactiv)
 			}
 		}
 	}
 	return get_outputs(nn.layers_list[nn.nb_neurons.len - 1])
 }
 
-pub fn (mut nn NeuralNetwork) test_unseen_data(){
-	nn.global_cost = 0
-	for index, inputs in nn.test_inputs{
+pub fn (mut nn NeuralNetwork) test_unseen_data() f64 {
+	nn.test_cost = 0
+	mut accuracy := 0.0
+	for index, inputs in nn.test_inputs {
 		for i, output in nn.fprop_value(inputs) { // for each output
-			tmp := output - nn.expected_training_outputs[index][i]
-			nn.global_cost += tmp * tmp
+			tmp := output - nn.expected_test_outputs[index][i]
+			nn.test_cost += tmp * tmp
+		}
+		if nn.classifier {
+			accuracy += if nn.test_value_classifier(index, true) { 1 } else { 0 }
 		}
 	}
-	println("\nTest cost: ${nn.global_cost}")
+	nn.test_cost /= nn.test_inputs.len
+	if nn.classifier {
+		println('\nTest cost: ${nn.test_cost} - Accuracy: ${(accuracy / nn.test_inputs.len * 100):.3}%')
+	} else {
+		println('\nTest cost: ${nn.test_cost}')
+	}
+
+	return nn.test_cost
 }
 
 /*
