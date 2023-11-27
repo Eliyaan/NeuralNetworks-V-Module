@@ -10,7 +10,9 @@ Backpropagation implementation
 
 /*
 Backprop training loop
-Input	: number of epochs that will run
+Input	: 
+	-	number of epochs that will run
+	-	how much noise is applied to the input (0 for no noise)
 */
 pub fn (mut nn NeuralNetwork) train_backprop(nb_epochs u64) {
 	mut timestamp := time.now()
@@ -54,41 +56,47 @@ pub fn (mut nn NeuralNetwork) train_backprop(nb_epochs u64) {
 pub fn (mut nn NeuralNetwork) train_backprop_minibatches(nb_epochs u64, batch_size int) {
 	mut timestamp := time.now()
 	mut print_cost := 0.0
-	mut accuracy := 0.0
 	mut print_accu := 0.0
+	mut stop := false
 	println('\n\nActual time: ${timestamp}')
 	for epoch in 1 .. nb_epochs + 1 {
-		accuracy = 0.0
-		if epoch > 1 {
-			nn.apply_delta()
-		}
-		nn.global_cost = 0.0 // reset the cost before the training of this epoch
-		nn.mini_batch_start = rd.int_in_range(0, nn.training_inputs.len - batch_size) or {
-			panic(err)
-		}
-		nn.mini_batch_end = nn.mini_batch_start + batch_size
-		for i in nn.mini_batch_start .. nn.mini_batch_end {
-			nn.neurons_costs_reset()
-			nn.backprop(i)
-			if nn.classifier {
-				accuracy += if nn.test_value_classifier(i, false) { 1 } else { 0 }
+		if !stop {
+			if epoch > 1 {
+				nn.apply_delta()
 			}
-		}
-		nn.global_cost /= batch_size
-		print_cost += nn.global_cost
-		accuracy /= batch_size
-		print_accu += accuracy
-		if nn.print_epoch > 0 {
-			if epoch % u64(nn.print_epoch) == 0 {
+			nn.global_accuracy = 0.0
+			nn.global_cost = 0.0 // reset the cost before the training of this epoch
+			nn.mini_batch_start = rd.int_in_range(0, nn.training_inputs.len - batch_size) or {
+				panic(err)
+			}
+			nn.mini_batch_end = nn.mini_batch_start + batch_size
+			for i in nn.mini_batch_start .. nn.mini_batch_end {
+				nn.neurons_costs_reset()
+				nn.backprop(i)
 				if nn.classifier {
-					println('\nEpoch: ${epoch} - Global Cost: ${print_cost / nn.print_epoch} - Accuracy: ${(print_accu / nn.print_epoch * 100):.2}% - Time Elapsed: ${(time.now() - timestamp)}')
-				} else {
-					println('\nEpoch: ${epoch} - Global Cost: ${print_cost / nn.print_epoch} - Time Elapsed: ${(time.now() - timestamp)}')
+					nn.global_accuracy += if nn.test_value_classifier(i, false) { 1 } else { 0 }
 				}
-				nn.test_unseen_data()
-				timestamp = time.now()
-				print_cost = 0
-				print_accu = 0
+			}
+			nn.global_cost /= batch_size
+			print_cost += nn.global_cost
+			nn.global_accuracy /= batch_size
+			print_accu += nn.global_accuracy
+			if nn.print_epoch > 0 {
+				if epoch % u64(nn.print_epoch) == 0 {
+					if nn.classifier {
+						println('\nEpoch: ${epoch} - Global Cost: ${print_cost / nn.print_epoch} - Accuracy: ${(print_accu / nn.print_epoch * 100):.2}% - Time Elapsed: ${(time.now() - timestamp)}')
+					} else {
+						println('\nEpoch: ${epoch} - Global Cost: ${print_cost / nn.print_epoch} - Time Elapsed: ${(time.now() - timestamp)}')
+					}
+					nn.test_unseen_data()
+					if nn.test_cost < nn.save_cost || nn.test_accuracy > nn.save_accuracy {
+						println("$nn.test_cost < $nn.save_cost || $nn.test_accuracy > $nn.save_accuracy")
+						nn.save('nn_save-e${epoch}-')
+					}
+					timestamp = time.now()
+					print_cost = 0
+					print_accu = 0
+				}
 			}
 		}
 	}
@@ -100,7 +108,7 @@ Calculates the costs of each wieghts and biases
 */
 [direct_array_access]
 pub fn (mut nn NeuralNetwork) backprop(index int) {
-	nn.fprop_value(nn.training_inputs[index])
+	nn.fprop(nn.training_inputs[index])
 
 	// Cost for the print
 	for i, neuron in nn.layers_list[nn.nb_neurons.len - 1] { // for each output
