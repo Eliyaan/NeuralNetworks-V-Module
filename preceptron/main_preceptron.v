@@ -27,49 +27,47 @@ pub mut:
 	learning_rate f64
 	nb_neurons    []int
 	activ_funcs   []fn (f64) f64
-
-	print_epoch int
-
-	deriv_activ_funcs []fn (f64) f64
-
-	w_random_interval f64 = 0.005
-	b_random_interval f64 = 0.005
 	// [layer_nbr][input_neuron_nbr][output_neuron_nbr]
 	weights_list [][][]Weight
 	// [layer_nbr][neuron_nbr]
 	layers_list [][]Neuron
+
+	w_random_interval f64   = 0.005
+	b_random_interval f64   = 0.005
+	seed              []u32 = [u32(0), 0]
+
+	print_epoch int
 	// For backprop:
 	global_cost               f64
-	global_accuracy			  f64
+	global_accuracy           f64
 	test_cost                 f64
-	test_accuracy			  f64
+	test_accuracy             f64
 	training_inputs           [][]f64
 	expected_training_outputs [][]f64
 	test_inputs               [][]f64
 	expected_test_outputs     [][]f64
+	deriv_activ_funcs         []fn (f64) f64
 	best_cost                 f64 = 100000000000
-	mini_batch_start          int = -1
-	mini_batch_end            int = -1
 	classifier                bool
 
-	seed []u32 = [u32(0), 0]
-	input_noise int 
+	input_noise        int
 	input_noise_chance int
-	image_size_goal int = 28
 
-	save_cost f64 
+	image_size_goal int = 28
+	// TODO: remove the default value or just pass everything as a struct for image_proc
+	save_cost     f64
 	save_accuracy f64 = 1000.0
 }
 
 /*
 Initialise the neural network
-Input	: name -> name of the file to load
+Input	: load_path -> name of the toml file to load (leave empty to generate a random one)
 */
 pub fn (mut nn NeuralNetwork) init(load_path string) {
 	rd.seed(nn.seed)
 	if load_path != '' {
+		// Load a toml nn
 		file := toml.parse_file(load_path) or { panic(err) }
-		//nn.best_cost = file.value('cost').f64()
 		base_weights_list := file.value('weights').array()
 		base_layers_list := file.value('biases').array()
 		nn.nb_neurons = file.value('arch').array().map(it.int())
@@ -92,29 +90,33 @@ pub fn (mut nn NeuralNetwork) init(load_path string) {
 		}
 		nn.layers_list = base_layers_list_good
 		nn.weights_list = base_weights_listgood
-	} else { // If it's a new nn
-		nn.weights_list = [][][]Weight{len: nn.nb_neurons.len - 1}
+	} else {
+		// Generate a nn with random weight and biases
 
+		// Generate the weights' list
+		nn.weights_list = [][][]Weight{len: nn.nb_neurons.len - 1}
 		for i, mut layer in nn.weights_list {
 			for _ in 0 .. nn.nb_neurons[i] {
 				layer << []Weight{len: nn.nb_neurons[i + 1]}
 			}
 		}
 
+		// Generate the neurons' list
 		nn.layers_list = [][]Neuron{}
 		for nb in nn.nb_neurons {
 			nn.layers_list << []Neuron{len: nb}
 		}
 
+		// Randomise the weights and biases
 		nn.set_rd_wb_values()
 	}
 }
 
 /*
-To load the data from a toml file
+To load a dataset from a toml file
 */
-pub fn (mut nn NeuralNetwork) load_dataset(name string) {
-	file := toml.parse_file(name) or { panic(err) }
+pub fn (mut nn NeuralNetwork) load_dataset(load_path string) {
+	file := toml.parse_file(load_path) or { panic(err) }
 	base_t_i_list := file.value('training_inputs').array()
 	base_e_t_o_list := file.value('expected_training_outputs').array()
 	base_test_i_list := file.value('test_inputs').array()
@@ -158,11 +160,11 @@ pub fn (mut nn NeuralNetwork) load_dataset(name string) {
 }
 
 /*
-For doing a simple forward propagation
+Forward Propagation
 Input	: array of values (1 value by input neuron)
 Output	: array of the outputs
 */
-[direct_array_access]
+@[direct_array_access]
 pub fn (mut nn NeuralNetwork) fprop(inputs []f64) []f64 {
 	// Get the inputs
 	if nn.input_noise_chance != 0 && nn.input_noise != 0 {
@@ -174,12 +176,13 @@ pub fn (mut nn NeuralNetwork) fprop(inputs []f64) []f64 {
 			nn.layers_list[0][i].output = input
 		}
 	}
-	// Fprop
+
+	// Forward Propagation
 	for i, mut layer in nn.layers_list { // For each layer
 		if i > 0 { // ignore the input layer
-			for j, mut o_neuron in layer { // For each neuron in the output layer
+			for j, mut o_neuron in layer { // For each neuron in the next layer (so where the output goes)
 				o_neuron.nactiv = 0
-				for k, i_neuron in nn.layers_list[i - 1] { // For each neuron in the input layer
+				for k, i_neuron in nn.layers_list[i - 1] { // For each neuron in the current layer (the values we propagate)
 					o_neuron.nactiv += nn.weights_list[i - 1][k][j].weight * i_neuron.output
 				}
 				o_neuron.nactiv += o_neuron.bias
@@ -190,19 +193,9 @@ pub fn (mut nn NeuralNetwork) fprop(inputs []f64) []f64 {
 	return get_outputs(nn.layers_list[nn.nb_neurons.len - 1])
 }
 
-fn (nn NeuralNetwork) noise() f64 {  // negative input noise -> ranges from -input_noise to input_noise
-	if nn.input_noise > 0 {
-		if rd.int_in_range(0, nn.input_noise_chance) or { 50 } == 0 {
-			return rd.f64_in_range(0, nn.input_noise) or {0} 
-		}
-	} else {
-		if rd.int_in_range(0, nn.input_noise_chance) or { 50 } == 0 {
-			return rd.f64_in_range(-nn.input_noise, nn.input_noise) or {0} 
-		}
-	}
-	return 0
-}
-
+/*
+Test the values from the test dataset
+*/
 pub fn (mut nn NeuralNetwork) test_unseen_data() (f64, f64) {
 	nn.test_cost = 0
 	nn.test_accuracy = 0.0

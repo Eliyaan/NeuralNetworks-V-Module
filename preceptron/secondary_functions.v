@@ -40,7 +40,7 @@ pub fn (mut nn NeuralNetwork) test_value_classifier(i int, test bool) bool {
 	return highest == true_highest
 }
 
-[direct_array_access; inline]
+@[direct_array_access; inline]
 pub fn (mut nn NeuralNetwork) set_rd_wb_values() {
 	// Weights
 	for mut layer in nn.weights_list {
@@ -87,12 +87,28 @@ pub fn (mut nn NeuralNetwork) save(save_path string) {
 	if nn.classifier {
 		file := 'arch=${nn.nb_neurons}\ntest_cost=${nn.test_cost}\ntest_accuracy${nn.test_accuracy}\nweights=${get_weights(nn.weights_list)}\nbiases=${get_biases(nn.layers_list)}'
 		os.write_file(save_path + nn.nb_neurons.str() + '.nntoml', file) or { panic(err) }
-		println('\nSaved the neural network weights and biases under ${save_path + nn.nb_neurons.str() +
-			'.nntoml'} !')
-	}else {
+		println('\nSaved the neural network weights and biases under ${save_path +
+			nn.nb_neurons.str() + '.nntoml'} !')
+	} else {
 		file := 'arch=${nn.nb_neurons}\ntest_cost=${nn.test_cost}\nweights=${get_weights(nn.weights_list)}\nbiases=${get_biases(nn.layers_list)}'
 		os.write_file(save_path + nn.nb_neurons.str() + '.nntoml', file) or { panic(err) }
-		println('\nSaved the neural network weights and biases under ${save_path + nn.nb_neurons.str() +
-			'.nntoml'} !')
+		println('\nSaved the neural network weights and biases under ${save_path +
+			nn.nb_neurons.str() + '.nntoml'} !')
 	}
+}
+
+/*
+Function for the input noise
+*/
+fn (nn NeuralNetwork) noise() f64 { // negative input noise -> ranges from -input_noise to input_noise
+	if nn.input_noise > 0 {
+		if rd.int_in_range(0, nn.input_noise_chance) or { 50 } == 0 {
+			return rd.f64_in_range(0, nn.input_noise) or { 0 }
+		}
+	} else {
+		if rd.int_in_range(0, nn.input_noise_chance) or { 50 } == 0 {
+			return rd.f64_in_range(-nn.input_noise, nn.input_noise) or { 0 }
+		}
+	}
+	return 0
 }

@@ -10,7 +10,7 @@ Backpropagation implementation
 
 /*
 Backprop training loop
-Input	: 
+Input	:
 	-	number of epochs that will run
 	-	how much noise is applied to the input (0 for no noise)
 */
@@ -66,11 +66,11 @@ pub fn (mut nn NeuralNetwork) train_backprop_minibatches(nb_epochs u64, batch_si
 			}
 			nn.global_accuracy = 0.0
 			nn.global_cost = 0.0 // reset the cost before the training of this epoch
-			nn.mini_batch_start = rd.int_in_range(0, nn.training_inputs.len - batch_size) or {
+			mini_batch_start := rd.int_in_range(0, nn.training_inputs.len - batch_size) or {
 				panic(err)
 			}
-			nn.mini_batch_end = nn.mini_batch_start + batch_size
-			for i in nn.mini_batch_start .. nn.mini_batch_end {
+			mini_batch_end := mini_batch_start + batch_size
+			for i in mini_batch_start .. mini_batch_end {
 				nn.neurons_costs_reset()
 				nn.backprop(i)
 				if nn.classifier {
@@ -90,7 +90,7 @@ pub fn (mut nn NeuralNetwork) train_backprop_minibatches(nb_epochs u64, batch_si
 					}
 					nn.test_unseen_data()
 					if nn.test_cost < nn.save_cost || nn.test_accuracy > nn.save_accuracy {
-						println("$nn.test_cost < $nn.save_cost || $nn.test_accuracy > $nn.save_accuracy")
+						println('${nn.test_cost} < ${nn.save_cost} || ${nn.test_accuracy} > ${nn.save_accuracy}')
 						nn.save('nn_save-e${epoch}-')
 					}
 					timestamp = time.now()
@@ -106,7 +106,7 @@ pub fn (mut nn NeuralNetwork) train_backprop_minibatches(nb_epochs u64, batch_si
 /*
 Calculates the costs of each wieghts and biases
 */
-[direct_array_access]
+@[direct_array_access]
 pub fn (mut nn NeuralNetwork) backprop(index int) {
 	nn.fprop(nn.training_inputs[index])
 

@@ -21,9 +21,9 @@ fn main() {
 	neunet.test_unseen_data()
 	neunet.save('XOR-nn_save')
 
-	println("Actual | Expected output")
-	println("${neunet.fprop(neunet.test_inputs[0])}  | ${neunet.expected_test_outputs[0]}")
-	println("${neunet.fprop(neunet.test_inputs[1])}  | ${neunet.expected_test_outputs[1]}")
-	println("${neunet.fprop(neunet.test_inputs[2])}  | ${neunet.expected_test_outputs[2]}")
-	println("${neunet.fprop(neunet.test_inputs[3])}  | ${neunet.expected_test_outputs[3]}")
+	println('Actual | Expected output')
+	println('${neunet.fprop(neunet.test_inputs[0])}  | ${neunet.expected_test_outputs[0]}')
+	println('${neunet.fprop(neunet.test_inputs[1])}  | ${neunet.expected_test_outputs[1]}')
+	println('${neunet.fprop(neunet.test_inputs[2])}  | ${neunet.expected_test_outputs[2]}')
+	println('${neunet.fprop(neunet.test_inputs[3])}  | ${neunet.expected_test_outputs[3]}')
 }
