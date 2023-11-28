@@ -2,6 +2,7 @@ module preceptron
 
 import toml
 import rand as rd
+import os
 
 /*
 Main functions and structs for the neural networks
@@ -66,6 +67,10 @@ Input	: load_path -> name of the toml file to load (leave empty to generate a ra
 pub fn (mut nn NeuralNetwork) init(load_path string) {
 	rd.seed(nn.seed)
 	if load_path != '' {
+		if !os.exists(load_path){
+			eprintln("The loaded NN toml file doesn't exist.")
+			exit(-1)
+		}
 		// Load a toml nn
 		file := toml.parse_file(load_path) or { panic(err) }
 		base_weights_list := file.value('weights').array()
