@@ -1,12 +1,11 @@
 module main
 
-import os
 import preceptron as p
 
 fn main() {
 	mut neunet := p.NeuralNetwork{
 		learning_rate: 1.0
-		nb_neurons: [784, 100, 10]
+		nb_neurons: [784, 100, 100, 10]
 		activ_funcs: [p.leaky_relu,p.leaky_relu,p.leaky_relu]
 		deriv_activ_funcs: [p.dleaky_relu,p.dleaky_relu,p.dleaky_relu]
 		w_random_interval: 0.01
@@ -14,13 +13,13 @@ fn main() {
 		
 		print_epoch: 200
 		classifier: true
-		save_accuracy: 75
+		save_accuracy: 82
 		save_cost: 0.30
 		input_noise: 128
 		input_noise_chance: 28
 	}
 	
-	neunet.init('Load or new random NN ? [name of the file/Enter] ? > ')
+	neunet.init("")
 
 	neunet.load_mnist(60000, 10000, 256, 7, 45, 4)
 	
