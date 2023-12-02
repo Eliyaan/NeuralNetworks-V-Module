@@ -2,10 +2,12 @@ module main
 
 import preceptron as p
 
+// TODO: function to visualise on which is there a fail in the test (to know if it's a dataset problem that causes overfitting)
+
 fn main() {
 	mut neunet := p.NeuralNetwork{
 		learning_rate: 1.0
-		nb_neurons: [784, 250, 150, 10]
+		nb_neurons: [784, 350, 200, 10]
 		activ_funcs: [p.leaky_relu,p.leaky_relu,p.leaky_relu,p.leaky_relu]
 		deriv_activ_funcs: [p.dleaky_relu,p.dleaky_relu,p.dleaky_relu,p.dleaky_relu]
 		w_random_interval: 0.01
@@ -25,7 +27,7 @@ fn main() {
 	
 	neunet.train_backprop_minibatches(5000, 50)
 	neunet.train_backprop_minibatches(5000, 100)
-	neunet.train_backprop_minibatches(5000, 150)
+	neunet.train_backprop_minibatches(5000, 200)
 	neunet.test_unseen_data()
 	println('Actual | Expected output')
 	println('${neunet.fprop(neunet.test_inputs[0])}  | ${neunet.expected_test_outputs[0]}')

@@ -87,12 +87,12 @@ pub fn (mut nn NeuralNetwork) save(save_path string) {
 	if nn.classifier {
 		file := 'arch=${nn.nb_neurons}\ntest_cost=${nn.test_cost}\ntest_accuracy=${nn.test_accuracy}\nweights=${get_weights(nn.weights_list)}\nbiases=${get_biases(nn.layers_list)}'
 		os.write_file(save_path + nn.nb_neurons.str() + '.nntoml', file) or { panic(err) }
-		println('\nSaved the neural network weights and biases under ${save_path +
+		println('\nSaved the neural network weights and biases as ${save_path +
 			nn.nb_neurons.str() + '.nntoml'} !')
 	} else {
 		file := 'arch=${nn.nb_neurons}\ntest_cost=${nn.test_cost}\nweights=${get_weights(nn.weights_list)}\nbiases=${get_biases(nn.layers_list)}'
 		os.write_file(save_path + nn.nb_neurons.str() + '.nntoml', file) or { panic(err) }
-		println('\nSaved the neural network weights and biases under ${save_path +
+		println('\nSaved the neural network weights and biases as ${save_path +
 			nn.nb_neurons.str() + '.nntoml'} !')
 	}
 }

@@ -90,7 +90,7 @@ pub fn (mut nn NeuralNetwork) train_backprop_minibatches(nb_epochs u64, batch_si
 					}
 					nn.test_unseen_data()
 					if nn.test_cost < nn.save_cost || nn.test_accuracy > nn.save_accuracy {
-						println('${nn.test_cost} < ${nn.save_cost} || ${nn.test_accuracy} > ${nn.save_accuracy}')
+						println('\n${nn.test_cost} < ${nn.save_cost} or ${nn.test_accuracy} > ${nn.save_accuracy}\nThreshold reached -> Saving')
 						nn.save('nn_save-e${epoch}-')
 					}
 					timestamp = time.now()
