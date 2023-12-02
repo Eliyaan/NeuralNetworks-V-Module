@@ -48,7 +48,7 @@ fn main() {
         ui_mode: true
     )
     app.pixel_values = []f64{len:image_size*image_size}
-    app.nn.init("mnist_save[784, 100, 10].nntoml")
+    app.nn.init("mnist_save[784, 200, 100, 10].nntoml")
     //app.nn.load_mnist(10, 0)
     //rotate(app.nn.training_inputs[0], -m.pi_2, 28)
     //lancement du programme/de la fenêtre
@@ -143,7 +143,7 @@ fn (mut app App) check_buttons(mouse_x f64, mouse_y f64){
             index := int(mouse_y/pixel_size)*image_size + int(mouse_x/pixel_size)
             for l in -1..2{
                 for c in -1..2{
-                    color := 255 - (85*c*c) - (85*l*l)
+                    color := 255 - (120*c*c) - (120*l*l)
                     if index%image_size+c < image_size && index%image_size+c >= 0 && index + c + l*image_size < image_size*image_size && index + c + l*image_size >= 0 {
                         if (app.pixel_values[index+c+l*image_size] + color) > 255{
                             app.pixel_values[index+c+l*image_size] = 255
