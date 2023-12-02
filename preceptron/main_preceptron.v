@@ -97,7 +97,10 @@ pub fn (mut nn NeuralNetwork) init(load_path string) {
 		nn.weights_list = base_weights_listgood
 	} else {
 		// Generate a nn with random weight and biases
-
+		if nn.nb_neurons.len > nn.activ_funcs.len {
+			eprintln("You have more layers than activation function. You have to choose an activation function for each layer")
+			exit(-1)
+		}
 		// Generate the weights' list
 		nn.weights_list = [][][]Weight{len: nn.nb_neurons.len - 1}
 		for i, mut layer in nn.weights_list {

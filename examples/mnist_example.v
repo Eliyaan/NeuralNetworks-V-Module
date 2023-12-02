@@ -5,9 +5,9 @@ import preceptron as p
 fn main() {
 	mut neunet := p.NeuralNetwork{
 		learning_rate: 1.0
-		nb_neurons: [784, 100, 100, 10]
-		activ_funcs: [p.leaky_relu,p.leaky_relu,p.leaky_relu]
-		deriv_activ_funcs: [p.dleaky_relu,p.dleaky_relu,p.dleaky_relu]
+		nb_neurons: [784, 200, 100, 10]
+		activ_funcs: [p.leaky_relu,p.leaky_relu,p.leaky_relu,p.leaky_relu]
+		deriv_activ_funcs: [p.dleaky_relu,p.dleaky_relu,p.dleaky_relu,p.dleaky_relu]
 		w_random_interval: 0.01
 		b_random_interval: 0.005
 		
