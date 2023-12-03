@@ -38,6 +38,8 @@ pub mut:
 	seed              []u32 = [u32(0), 0]
 
 	print_epoch int
+	print_batch int
+	test_batch int
 	// For backprop:
 	global_cost               f64
 	global_accuracy           f64

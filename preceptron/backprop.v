@@ -1,8 +1,6 @@
 module preceptron
 
-// import os
 import time
-import rand as rd
 
 /*
 Backpropagation implementation
@@ -57,48 +55,50 @@ pub fn (mut nn NeuralNetwork) train_backprop_minibatches(nb_epochs u64, batch_si
 	mut timestamp := time.now()
 	mut print_cost := 0.0
 	mut print_accu := 0.0
-	mut stop := false
 	println('\n\nActual time: ${timestamp}')
 	for epoch in 1 .. nb_epochs + 1 {
-		if !stop {
-			if epoch > 1 {
+		for batch in 1 .. int(nn.training_inputs.len/batch_size) + 1 + 1{
+			if epoch+batch > 2 {
 				nn.apply_delta()
 			}
 			nn.global_accuracy = 0.0
 			nn.global_cost = 0.0 // reset the cost before the training of this epoch
-			mini_batch_start := rd.int_in_range(0, nn.training_inputs.len - batch_size) or {
-				panic(err)
-			}
-			mini_batch_end := mini_batch_start + batch_size
-			for i in mini_batch_start .. mini_batch_end {
-				nn.neurons_costs_reset()
-				nn.backprop(i)
-				if nn.classifier {
-					nn.global_accuracy += if nn.test_value_classifier(i, false) { 1 } else { 0 }
+			for i in 0 .. batch_size {
+				elem := i + batch*batch_size
+				if elem < nn.training_inputs.len {
+					nn.neurons_costs_reset()
+					nn.backprop(elem)
+					if nn.classifier {
+						nn.global_accuracy += if nn.test_value_classifier(elem, false) { 1 } else { 0 }
+					}
 				}
 			}
 			nn.global_cost /= batch_size
 			print_cost += nn.global_cost
 			nn.global_accuracy /= batch_size
 			print_accu += nn.global_accuracy
-			if nn.print_epoch > 0 {
+			if batch%nn.print_batch == 0 && nn.print_epoch > 0 {
 				if epoch % u64(nn.print_epoch) == 0 {
 					if nn.classifier {
-						println('\nEpoch: ${epoch} - Global Cost: ${print_cost / nn.print_epoch} - Accuracy: ${(print_accu / nn.print_epoch * 100):.2}% - Time Elapsed: ${(time.now() - timestamp)}')
+						println('\nEpoch: ${epoch}/${nb_epochs} - Batch: ${batch}/${int(nn.training_inputs.len/batch_size)} - Global Cost: ${print_cost / (nn.print_epoch*nn.print_batch)} - Accuracy: ${(print_accu / (nn.print_epoch*nn.print_batch)* 100):.2}% - Time Elapsed: ${(time.now() - timestamp)}')
 					} else {
-						println('\nEpoch: ${epoch} - Global Cost: ${print_cost / nn.print_epoch} - Time Elapsed: ${(time.now() - timestamp)}')
-					}
-					nn.test_unseen_data()
-					if nn.test_cost < nn.save_cost || nn.test_accuracy > nn.save_accuracy {
-						println('\n${nn.test_cost} < ${nn.save_cost} or ${nn.test_accuracy} > ${nn.save_accuracy}\nThreshold reached -> Saving')
-						nn.save('nn_save-e${epoch}-')
+						println('\nEpoch: ${epoch}/${nb_epochs} - Batch: ${batch}/${int(nn.training_inputs.len/batch_size)} - Global Cost: ${print_cost / (nn.print_epoch*nn.print_batch)} - Time Elapsed: ${(time.now() - timestamp)}')
 					}
 					timestamp = time.now()
 					print_cost = 0
 					print_accu = 0
+					
+				}
+			}
+			if batch%nn.test_batch == 0 {
+				nn.test_unseen_data()
+				if nn.test_cost < nn.save_cost || nn.test_accuracy > nn.save_accuracy {
+					println('\n${nn.test_cost} < ${nn.save_cost} or ${nn.test_accuracy} > ${nn.save_accuracy}\nThreshold reached -> Saving')
+					nn.save('nn_save-e${epoch}-')
 				}
 			}
 		}
+		
 	}
 	println('\nActual time: ${timestamp}\n')
 }

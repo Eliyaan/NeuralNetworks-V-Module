@@ -13,9 +13,11 @@ fn main() {
 		w_random_interval: 0.01
 		b_random_interval: 0.005
 		
-		print_epoch: 200
+		print_epoch: 1
+		print_batch: 100
+		test_batch: 1000
 		classifier: true
-		save_accuracy: 82
+		save_accuracy: 85
 		save_cost: 0.30
 		input_noise: 128
 		input_noise_chance: 28
@@ -25,9 +27,9 @@ fn main() {
 
 	neunet.load_mnist(60000, 10000, 256, 7, 45, 4)
 	
-	neunet.train_backprop_minibatches(5000, 50)
-	neunet.train_backprop_minibatches(5000, 100)
-	neunet.train_backprop_minibatches(5000, 200)
+	neunet.train_backprop_minibatches(5, 50)
+	neunet.train_backprop_minibatches(5, 50)
+	neunet.train_backprop_minibatches(5, 50) //  not useful for now
 	neunet.test_unseen_data()
 	println('Actual | Expected output')
 	println('${neunet.fprop(neunet.test_inputs[0])}  | ${neunet.expected_test_outputs[0]}')
