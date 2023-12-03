@@ -1,14 +1,19 @@
 module main
 
-import preceptron as p
+/*
+A small and fast example, very great to manipulate and test to get used to the hyperparametters.
+*/
+
+import neural_networks as n
 import os
 
 fn main() {
-	mut neunet := p.NeuralNetwork{
+	mut neunet := n.NeuralNetwork{
 		learning_rate: 0.37
+		momentum: 0.5
 		nb_neurons: [2, 3, 1]
-		activ_funcs: [p.leaky_relu, p.leaky_relu]
-		deriv_activ_funcs: [p.dleaky_relu, p.dleaky_relu]
+		activ_funcs: [n.leaky_relu, n.leaky_relu]
+		deriv_activ_funcs: [n.dleaky_relu, n.dleaky_relu]
 		w_random_interval: 0.6
 		b_random_interval: 0.6
 		print_epoch: 50

@@ -27,8 +27,7 @@ mut:
     
 
     nn p.NeuralNetwork = p.NeuralNetwork{
-		nb_neurons: [784, 100, 10]
-		activ_funcs: [p.leaky_relu,p.leaky_relu,p.leaky_relu]
+		activ_funcs: [p.leaky_relu,p.leaky_relu,p.leaky_relu,p.leaky_relu,p.leaky_relu]
 	}
 }
 
