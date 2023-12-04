@@ -40,9 +40,9 @@ pub mut:
 	b_random_interval f64   = 0.005
 	seed              []u32 = [u32(0), 0]
 
-	print_epoch int
-	print_batch int
-	test_batch int
+	print_epoch int = 1
+	print_batch int = 1
+	test_batch int = 1
 	// For backprop:
 	global_cost               f64
 	global_accuracy           f64
@@ -135,36 +135,36 @@ pub fn (mut nn NeuralNetwork) load_dataset(load_path string) {
 	base_test_i_list := file.value('test_inputs').array()
 	base_e_test_o_list := file.value('expected_test_outputs').array()
 
-	nn.training_inputs = [][]f64{}
-	nn.expected_training_outputs = [][]f64{}
+	nn.training_inputs = [][]f32{}
+	nn.expected_training_outputs = [][]f32{}
 	for i, t_i in base_t_i_list {
-		nn.training_inputs << []f64{}
+		nn.training_inputs << []f32{}
 		for value in t_i.array() {
-			nn.training_inputs[i] << value.f64()
+			nn.training_inputs[i] << value.f32()
 		}
 	}
 	for i, e_t_o in base_e_t_o_list {
-		nn.expected_training_outputs << []f64{}
+		nn.expected_training_outputs << []f32{}
 		for value in e_t_o.array() {
-			nn.expected_training_outputs[i] << value.f64()
+			nn.expected_training_outputs[i] << value.f32()
 		}
 	}
 	assert nn.training_inputs[0].len == nn.nb_neurons[0]
 	assert nn.expected_training_outputs[0].len == nn.nb_neurons[nn.nb_neurons.len - 1]
 	assert nn.training_inputs.len == nn.expected_training_outputs.len
 
-	nn.test_inputs = [][]f64{}
-	nn.expected_test_outputs = [][]f64{}
+	nn.test_inputs = [][]f32{}
+	nn.expected_test_outputs = [][]f32{}
 	for i, test_i in base_test_i_list {
-		nn.test_inputs << []f64{}
+		nn.test_inputs << []f32{}
 		for value in test_i.array() {
-			nn.test_inputs[i] << value.f64()
+			nn.test_inputs[i] << value.f32()
 		}
 	}
 	for i, e_test_o in base_e_test_o_list {
-		nn.expected_test_outputs << []f64{}
+		nn.expected_test_outputs << []f32{}
 		for value in e_test_o.array() {
-			nn.expected_test_outputs[i] << value.f64()
+			nn.expected_test_outputs[i] << value.f32()
 		}
 	}
 	assert nn.test_inputs[0].len == nn.nb_neurons[0]
@@ -178,17 +178,9 @@ Input	: array of values (1 value by input neuron)
 Output	: array of the outputs
 */
 @[direct_array_access]
-pub fn (mut nn NeuralNetwork) fprop(inputs []f64) []f64 {
+pub fn (mut nn NeuralNetwork) fprop(inputs []f32) []f64 {
 	// Get the inputs
-	if nn.input_noise_chance != 0 && nn.input_noise != 0 {
-		for i, input in inputs {
-			nn.layers_list[0][i].output = input + nn.noise()
-		}
-	} else {
-		for i, input in inputs {
-			nn.layers_list[0][i].output = input
-		}
-	}
+	nn.fprop_get_inputs(inputs)
 
 	// Forward Propagation
 	for i, mut layer in nn.layers_list { // For each layer
@@ -204,6 +196,18 @@ pub fn (mut nn NeuralNetwork) fprop(inputs []f64) []f64 {
 		}
 	}
 	return get_outputs(nn.layers_list[nn.nb_neurons.len - 1])
+}
+
+fn (mut nn NeuralNetwork) fprop_get_inputs(inputs []f32) {
+	if nn.input_noise_chance != 0 && nn.input_noise != 0 {
+		for i, input in inputs {
+			nn.layers_list[0][i].output = input + nn.noise()
+		}
+	} else {
+		for i, input in inputs {
+			nn.layers_list[0][i].output = input
+		}
+	}
 }
 
 /*

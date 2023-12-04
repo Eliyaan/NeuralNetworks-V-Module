@@ -15,30 +15,30 @@ pub fn (mut nn NeuralNetwork) load_mnist(nb_training int, nb_tests int, dupli_tr
 	println('Loading mnist...')
 	test_labels := os.open('mnist\\t10k-labels-idx1-ubyte') or { panic(err) }
 	test_images := os.open('mnist\\t10k-images-idx3-ubyte') or { panic(err) }
-	nn.test_inputs = [][]f64{}
-	nn.expected_test_outputs = [][]f64{}
+	nn.test_inputs = [][]f32{}
+	nn.expected_test_outputs = [][]f32{}
 	for i in 0 .. nb_tests {
 		for _ in 0 .. dupli_tests {
 			nn.test_inputs << [
-				process_img(test_images.read_bytes_at(784, i * 784 + 16).map(f64(it)), 28,
+				process_img(test_images.read_bytes_at(784, i * 784 + 16).map(f32(it)), 28,
 					28 + rd.int_in_range(-scale_range, scale_range + 1) or { panic(err) },
 					28 + rd.int_in_range(-scale_range, scale_range + 1) or { panic(err) },
-					noise_strength, nn.image_size_goal, rd.f64_in_range(-rotation_range, rotation_range) or {
+					noise_strength, nn.image_size_goal, rd.f32_in_range(-rotation_range, rotation_range) or {
 					panic(err)
 				}, offset_range),
 			]
 			nn.expected_test_outputs << [
 				match test_labels.read_bytes_at(1, i + 8)[0] {
-					0 { [f64(1), 0, 0, 0, 0, 0, 0, 0, 0, 0] }
-					1 { [f64(0), 1, 0, 0, 0, 0, 0, 0, 0, 0] }
-					2 { [f64(0), 0, 1, 0, 0, 0, 0, 0, 0, 0] }
-					3 { [f64(0), 0, 0, 1, 0, 0, 0, 0, 0, 0] }
-					4 { [f64(0), 0, 0, 0, 1, 0, 0, 0, 0, 0] }
-					5 { [f64(0), 0, 0, 0, 0, 1, 0, 0, 0, 0] }
-					6 { [f64(0), 0, 0, 0, 0, 0, 1, 0, 0, 0] }
-					7 { [f64(0), 0, 0, 0, 0, 0, 0, 1, 0, 0] }
-					8 { [f64(0), 0, 0, 0, 0, 0, 0, 0, 1, 0] }
-					9 { [f64(0), 0, 0, 0, 0, 0, 0, 0, 0, 1] }
+					0 { [f32(1), 0, 0, 0, 0, 0, 0, 0, 0, 0] }
+					1 { [f32(0), 1, 0, 0, 0, 0, 0, 0, 0, 0] }
+					2 { [f32(0), 0, 1, 0, 0, 0, 0, 0, 0, 0] }
+					3 { [f32(0), 0, 0, 1, 0, 0, 0, 0, 0, 0] }
+					4 { [f32(0), 0, 0, 0, 1, 0, 0, 0, 0, 0] }
+					5 { [f32(0), 0, 0, 0, 0, 1, 0, 0, 0, 0] }
+					6 { [f32(0), 0, 0, 0, 0, 0, 1, 0, 0, 0] }
+					7 { [f32(0), 0, 0, 0, 0, 0, 0, 1, 0, 0] }
+					8 { [f32(0), 0, 0, 0, 0, 0, 0, 0, 1, 0] }
+					9 { [f32(0), 0, 0, 0, 0, 0, 0, 0, 0, 1] }
 					else { panic('Match test outputs') }
 				},
 			]
@@ -46,8 +46,8 @@ pub fn (mut nn NeuralNetwork) load_mnist(nb_training int, nb_tests int, dupli_tr
 	}
 	train_labels := os.open('mnist\\train-labels-idx1-ubyte') or { panic(err) }
 	train_images := os.open('mnist\\train-images-idx3-ubyte') or { panic(err) }
-	nn.training_inputs = [][]f64{}
-	nn.expected_training_outputs = [][]f64{}
+	nn.training_inputs = [][]f32{}
+	nn.expected_training_outputs = [][]f32{}
 	mut order_array := [][]u64{len:dupli_training, init:[]u64{len:nb_training, init:u64(index)}}
 	for mut slice in order_array {
 		rd.shuffle(mut slice, rdconfig.ShuffleConfigStruct{}) or {panic(err)}
@@ -55,25 +55,25 @@ pub fn (mut nn NeuralNetwork) load_mnist(nb_training int, nb_tests int, dupli_tr
 	for slice in order_array {
 		for i in slice {
 			nn.training_inputs << [
-				process_img(train_images.read_bytes_at(784, i * 784 + 16).map(f64(it)), 28,
+				process_img(train_images.read_bytes_at(784, i * 784 + 16).map(f32(it)), 28,
 					28 + rd.int_in_range(-scale_range, scale_range + 1) or { panic(err) },
 					28 + rd.int_in_range(-scale_range, scale_range + 1) or { panic(err) },
-					noise_strength, nn.image_size_goal, rd.f64_in_range(-rotation_range, rotation_range) or {
+					noise_strength, nn.image_size_goal, rd.f32_in_range(-rotation_range, rotation_range) or {
 					panic(err)
 				}, offset_range),
 			]
 			nn.expected_training_outputs << [
 				match train_labels.read_bytes_at(1, i + 8)[0] {
-					0 { [f64(1), 0, 0, 0, 0, 0, 0, 0, 0, 0] }
-					1 { [f64(0), 1, 0, 0, 0, 0, 0, 0, 0, 0] }
-					2 { [f64(0), 0, 1, 0, 0, 0, 0, 0, 0, 0] }
-					3 { [f64(0), 0, 0, 1, 0, 0, 0, 0, 0, 0] }
-					4 { [f64(0), 0, 0, 0, 1, 0, 0, 0, 0, 0] }
-					5 { [f64(0), 0, 0, 0, 0, 1, 0, 0, 0, 0] }
-					6 { [f64(0), 0, 0, 0, 0, 0, 1, 0, 0, 0] }
-					7 { [f64(0), 0, 0, 0, 0, 0, 0, 1, 0, 0] }
-					8 { [f64(0), 0, 0, 0, 0, 0, 0, 0, 1, 0] }
-					9 { [f64(0), 0, 0, 0, 0, 0, 0, 0, 0, 1] }
+					0 { [f32(1), 0, 0, 0, 0, 0, 0, 0, 0, 0] }
+					1 { [f32(0), 1, 0, 0, 0, 0, 0, 0, 0, 0] }
+					2 { [f32(0), 0, 1, 0, 0, 0, 0, 0, 0, 0] }
+					3 { [f32(0), 0, 0, 1, 0, 0, 0, 0, 0, 0] }
+					4 { [f32(0), 0, 0, 0, 1, 0, 0, 0, 0, 0] }
+					5 { [f32(0), 0, 0, 0, 0, 1, 0, 0, 0, 0] }
+					6 { [f32(0), 0, 0, 0, 0, 0, 1, 0, 0, 0] }
+					7 { [f32(0), 0, 0, 0, 0, 0, 0, 1, 0, 0] }
+					8 { [f32(0), 0, 0, 0, 0, 0, 0, 0, 1, 0] }
+					9 { [f32(0), 0, 0, 0, 0, 0, 0, 0, 0, 1] }
 					else { panic('bu') }
 				},
 			]
@@ -105,21 +105,21 @@ fn min(a []f64) f64 {
 }
 
 @[inline]
-fn round_to_greater(nb f64) f64 {
+fn round_to_greater(nb f32) f32 {
 	if nb >= 0 {
 		return ceil_f(m.round_sig(nb, 5))
 	} else {
-		return f64(int(m.round_sig(nb, 5)))
+		return f32(int(m.round_sig(nb, 5)))
 	}
 }
 
 @[inline]
-fn floor_f(nb f64) f64 {
-	return f64(int(nb))
+fn floor_f(nb f64) f32 {
+	return f32(int(nb))
 }
 
 @[inline]
-fn ceil_f(nb f64) f64 {
+fn ceil_f(nb f64) f32 {
 	return -floor_f(-nb)
 }
 
@@ -127,13 +127,13 @@ fn ceil_f(nb f64) f64 {
 Center an image in a different size image (with noise in the offset and the output or not)
 */
 @[direct_array_access]
-pub fn offset_diff_sized_image(a []f64, x_size int, y_size int, x_goal int, y_goal int, noise_strength int, offset_range int) []f64 {
+pub fn offset_diff_sized_image(a []f32, x_size int, y_size int, x_goal int, y_goal int, noise_strength int, offset_range int) []f32 {
 	mut offset_x, mut offset_y := get_center_of_mass(a, x_size, y_size, x_goal, y_goal)
 	if offset_range > 0 {
 		offset_x += rd.int_in_range(-offset_range, offset_range + 1) or { panic(err) }
 		offset_y += rd.int_in_range(-offset_range, offset_range + 1) or { panic(err) }
 	}
-	mut output := []f64{cap: y_goal * x_goal}
+	mut output := []f32{cap: y_goal * x_goal}
 	for l in 0 .. y_goal {
 		for c in 0 .. x_goal {
 			if offset_x + c >= 0 && offset_x + c < x_size && offset_y + l >= 0
@@ -143,7 +143,7 @@ pub fn offset_diff_sized_image(a []f64, x_size int, y_size int, x_goal int, y_go
 				output << 0.0
 			}
 			if noise_strength > 0 {
-				output[l * x_goal + c] += f64(if (rd.int_in_range(0, 28) or { 50 }) == 0 { ((rd.int_in_range(0, m.max(0, noise_strength)) or {
+				output[l * x_goal + c] += f32(if (rd.int_in_range(0, 28) or { 50 }) == 0 { ((rd.int_in_range(0, m.max(0, noise_strength)) or {
 						0}) + int(output[l * x_goal + c])) % 256 } else { 0 })
 			}
 		}
@@ -152,7 +152,7 @@ pub fn offset_diff_sized_image(a []f64, x_size int, y_size int, x_goal int, y_go
 }
 
 @[direct_array_access]
-pub fn rotate(a []f64, alpha f64, im_size int) ([]f64, int) {
+pub fn rotate(a []f32, alpha f32, im_size int) ([]f32, int) {
 	if alpha != 0 {
 		angle := m.radians(alpha)
 
@@ -166,34 +166,34 @@ pub fn rotate(a []f64, alpha f64, im_size int) ([]f64, int) {
 		min_x := (min([full_x, only_x_x, only_y_x, 0]))
 		max_y := (max([full_y, only_x_y, only_y_y, 0]))
 		min_y := (min([full_y, only_x_y, only_y_y, 0]))
-		size_x := (max_x - min_x + 1)
-		size_y := (max_y - min_y + 1)
+		size_x := f32(max_x - min_x + 1)
+		size_y := f32(max_y - min_y + 1)
 
 		side := int(m.sqrt(round_to_greater(round_to_greater(size_x) * round_to_greater(size_y))))
-		mut output := []f64{cap: side * side}
-		mut twod_output := [][]f64{len: side, cap: side, init: []f64{len: side, cap: side}} // need to opti
+		mut output := []f32{cap: side * side}
+		mut twod_output := [][]f32{len: side, cap: side, init: []f32{len: side, cap: side}} // need to opti
 		for i, pixel in a {
 			if pixel > 0 {
-				x := f64(i % im_size) - (f64(im_size)) / 2.0 + 0.5
-				y := f64(i / im_size) - (f64(im_size)) / 2.0 + 0.5
+				x := f32(i % im_size) - (f32(im_size)) / 2.0 + 0.5
+				y := f32(i / im_size) - (f32(im_size)) / 2.0 + 0.5
 				xn := x * m.cos(angle) - y * m.sin(angle)
 				yn := x * m.sin(angle) + y * m.cos(angle)
 
 				array_coord_y := m.max(yn + side / 2 - 0.5, 0)
 				array_coord_x := m.max(xn + side / 2 - 0.5, 0)
-				twod_output[int(array_coord_y)][int(array_coord_x)] += pixel * (1 - (array_coord_y - int(array_coord_y))) * (1 - (array_coord_x - int(array_coord_x)))
+				twod_output[int(array_coord_y)][int(array_coord_x)] += f32(pixel * (1 - (array_coord_y - int(array_coord_y))) * (1 - (array_coord_x - int(array_coord_x))))
 				if twod_output[int(array_coord_y)][int(array_coord_x)] > 255 {
 					twod_output[int(array_coord_y)][int(array_coord_x)] = 255
 				}
-				twod_output[int(array_coord_y)][int(ceil_f(array_coord_x))] += pixel * (1 - (array_coord_y - int(array_coord_y))) * (array_coord_x - int(array_coord_x))
+				twod_output[int(array_coord_y)][int(ceil_f(array_coord_x))] += f32(pixel * (1 - (array_coord_y - int(array_coord_y))) * (array_coord_x - int(array_coord_x)))
 				if twod_output[int(array_coord_y)][int(ceil_f(array_coord_x))] > 255 {
 					twod_output[int(array_coord_y)][int(ceil_f(array_coord_x))] = 255
 				}
-				twod_output[int(ceil_f(array_coord_y))][int(array_coord_x)] += pixel * (array_coord_y - int(array_coord_y)) * (1 - (array_coord_x - int(array_coord_x)))
+				twod_output[int(ceil_f(array_coord_y))][int(array_coord_x)] += f32(pixel * (array_coord_y - int(array_coord_y)) * (1 - (array_coord_x - int(array_coord_x))))
 				if twod_output[int(ceil_f(array_coord_y))][int(array_coord_x)] > 255 {
 					twod_output[int(ceil_f(array_coord_y))][int(array_coord_x)] = 255
 				}
-				twod_output[int(ceil_f(array_coord_y))][int(ceil_f(array_coord_x))] += pixel * (array_coord_y - int(array_coord_y)) * (array_coord_x - int(array_coord_x))
+				twod_output[int(ceil_f(array_coord_y))][int(ceil_f(array_coord_x))] += f32(pixel * (array_coord_y - int(array_coord_y)) * (array_coord_x - int(array_coord_x)))
 				if twod_output[int(ceil_f(array_coord_y))][int(ceil_f(array_coord_x))] > 255 {
 					twod_output[int(ceil_f(array_coord_y))][int(ceil_f(array_coord_x))] = 255
 				}
@@ -209,7 +209,7 @@ pub fn rotate(a []f64, alpha f64, im_size int) ([]f64, int) {
 }
 
 @[direct_array_access]
-pub fn process_img(a []f64, base int, goal_x int, goal_y int, noise_strength int, image_size_goal int, angle f64, offset_range int) []f64 {
+pub fn process_img(a []f32, base int, goal_x int, goal_y int, noise_strength int, image_size_goal int, angle f32, offset_range int) []f32 {
 	rotated_a, new_base := rotate(a, angle, base)
 	return scale_and_process_img(offset_diff_sized_image(rotated_a, new_base, new_base,
 		image_size_goal, image_size_goal, 0, 0), image_size_goal, goal_x, goal_y, noise_strength,
@@ -220,12 +220,12 @@ pub fn process_img(a []f64, base int, goal_x int, goal_y int, noise_strength int
 Scale an image to a certain nb of pixels and then transform it into a 28 x 28 image
 */
 @[direct_array_access]
-pub fn scale_and_process_img(a []f64, base int, goal_x int, goal_y int, noise_strength int, image_size_goal int, offset_range int) []f64 {
-	mut new_a := []f64{len: goal_x * goal_y, cap: goal_x * goal_y}
+pub fn scale_and_process_img(a []f32, base int, goal_x int, goal_y int, noise_strength int, image_size_goal int, offset_range int) []f32 {
+	mut new_a := []f32{len: goal_x * goal_y, cap: goal_x * goal_y}
 	for l in 0 .. goal_y {
 		for c in 0 .. goal_x {
-			mut val_l := f64(l * (base - 1))
-			mut val_c := f64(c * (base - 1))
+			mut val_l := f32(l * (base - 1))
+			mut val_c := f32(c * (base - 1))
 			if int(val_l) % (goal_y - 1) == 0 && int(val_c) % (goal_x - 1) == 0 {
 				new_a[l * goal_x + c] = a[int(val_l) / (goal_y - 1) * base +
 					int(val_c) / (goal_x - 1)]
@@ -269,7 +269,7 @@ pub fn scale_and_process_img(a []f64, base int, goal_x int, goal_y int, noise_st
 Get the center of mass of the image
 */
 @[direct_array_access]
-pub fn get_center_of_mass(a []f64, x_size int, y_size int, x_goal int, y_goal int) (int, int) {
+pub fn get_center_of_mass(a []f32, x_size int, y_size int, x_goal int, y_goal int) (int, int) {
 	mut x := 0.0
 	mut y := 0.0
 	mut cpt := 0.0

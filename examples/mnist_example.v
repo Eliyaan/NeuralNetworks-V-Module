@@ -2,17 +2,19 @@ module main
 
 import neural_networks as n
 
-/* TODO: 
+/* 
+TODO: 
+- prod -prof prof.txt optimisation /!\ too much time to train T-T
+- pre momentum -> test naive implementation
 - adjust the data augmentation to better fit the need
 - dropout
 - noise input
-- -prod -prof prof.txt optimisation
 - function to visualise on which is there a fail in the test (to know if it's a dataset problem that causes overfitting)
 */			
 
 fn main() {
 	mut neunet := n.NeuralNetwork{
-		learning_rate: 1.0
+		learning_rate: 0.01
 		momentum: 0.9
 		nb_neurons: [784, 400, 250, 10]
 		activ_funcs: [n.leaky_relu,n.leaky_relu,n.leaky_relu,n.leaky_relu]
@@ -21,11 +23,11 @@ fn main() {
 		b_random_interval: 0.005
 		
 		print_epoch: 1
-		print_batch: 400
-		test_batch: 2400
+		print_batch: 300
+		test_batch: 1200
 		classifier: true
 		save_accuracy: 90
-		save_cost: 0.20
+		save_cost: 0.10
 		input_noise: 128
 		input_noise_chance: 28
 	}

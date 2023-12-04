@@ -1,7 +1,7 @@
 module main
 import gg
 import gx
-import preceptron as p
+import neural_networks as p
 
 const (
     bg_color     = gx.white
@@ -22,7 +22,7 @@ struct App {
 mut:
     gg    &gg.Context = unsafe { nil }
     
-    pixel_values []f64
+    pixel_values []f32
     mouse_held bool
     
 
@@ -46,8 +46,8 @@ fn main() {
         sample_count: 2
         ui_mode: true
     )
-    app.pixel_values = []f64{len:image_size*image_size}
-    app.nn.init("nn_save-e4600-[784, 250, 150, 10].nntoml")
+    app.pixel_values = []f32{len:image_size*image_size}
+    app.nn.init("nn_save-e4-[784, 400, 250, 10].nntoml")
     //app.nn.load_mnist(10, 0)
     //rotate(app.nn.training_inputs[0], -m.pi_2, 28)
     //lancement du programme/de la fenêtre
@@ -116,7 +116,7 @@ fn on_event(e &gg.Event, mut app App){
             match e.key_code {
                 .escape {app.gg.quit()}
                 .backspace{
-                    app.pixel_values = []f64{len:image_size*image_size}
+                    app.pixel_values = []f32{len:image_size*image_size}
                 }
                 else {}
             }
