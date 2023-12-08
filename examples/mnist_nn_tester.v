@@ -47,7 +47,7 @@ fn main() {
         ui_mode: true
     )
     app.pixel_values = []f32{len:image_size*image_size}
-    app.nn.init("nn_save-e4-[784, 400, 250, 10].nntoml")
+    app.nn.init("mnist-93.6%.nntoml")
     //app.nn.load_mnist(10, 0)
     //rotate(app.nn.training_inputs[0], -m.pi_2, 28)
     //lancement du programme/de la fenêtre
