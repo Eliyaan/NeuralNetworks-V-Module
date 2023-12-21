@@ -1,0 +1,1 @@
+Module { name: 'neural_networks' version: '0.0.0' description: '' license: 'MIT' dependencies:[vsl] }
