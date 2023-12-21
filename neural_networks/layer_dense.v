@@ -7,7 +7,7 @@ pub mut:
 	input []f64
 	output []f64
 	weights &la.Matrix[f64]
-	weights_gradient &la.Matrix[f64] // maybe not made in the right order
+	weights_gradient &la.Matrix[f64]
 	bias []f64
 	bias_gradient []f64
 }

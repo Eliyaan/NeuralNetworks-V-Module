@@ -23,12 +23,11 @@ fn main() {
 	training_parameters := nn.TrainingParams {
 		learning_rate: 0.37
 		nb_epochs: 300
-		print_interval: 5
+		print_interval: 30
 		cost_function: .mse // mean squared error
 		training_inputs: [[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]]
 		expected_training_outputs: [[0.0], [1.0], [1.0], [0.0]]
 	}
-	dump(model)
 	
 	model.train(training_parameters)
 }

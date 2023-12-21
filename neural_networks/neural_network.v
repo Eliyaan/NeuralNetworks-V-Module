@@ -34,13 +34,10 @@ pub fn (mut nn NeuralNetwork) train(t_p TrainingParams) { // TODO: input an inte
 			error += cost_fn(t_p.expected_training_outputs[i], output)
 			nn.backpropagation(t_p.expected_training_outputs[i], output, cost_prime)			
 		}
-		if epoch % t_p.print_interval == 0 {
-			println("$epoch/$t_p.nb_epochs : $error")
+		if (epoch+1) % t_p.print_interval == 0 || epoch == 0 {
+			println("Epoch ${epoch+1}/$t_p.nb_epochs\t-\tCost : $error")
 		}
-		for mut layer in nn.layers {
-			layer.apply_grad(t_p.training_inputs.len, t_p.learning_rate)
-			layer.reset()
-		}
+		nn.apply_gradient_descent(t_p.training_inputs.len, t_p.learning_rate)
 	}
 }
 
@@ -56,5 +53,12 @@ pub fn (mut nn NeuralNetwork) backpropagation(expected_output []f64, output []f6
 	mut gradient := cost_prime(expected_output, output)
 	for j := nn.layers.len-1; j >= 0; j -= 1 {
 		gradient = nn.layers[j].backward(gradient)
+	}
+}
+
+pub fn (mut nn NeuralNetwork) apply_gradient_descent(nb_elems_seen int, lr f64) {
+	for mut layer in nn.layers {
+		layer.apply_grad(nb_elems_seen, lr)
+		layer.reset()
 	}
 }
