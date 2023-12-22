@@ -66,8 +66,8 @@ pub fn (mut nn NeuralNetwork) apply_gradient_descent(nb_elems_seen int, lr f64, 
 	}
 }
 
-pub fn (mut nn NeuralNetwork) save_model() {
-	mut file := os.create('save') or {panic(err)}
+pub fn (mut nn NeuralNetwork) save_model(save_name string) {
+	mut file := os.create(save_name) or {panic(err)}
 	file.write_raw(i64(nn.layers.len)) or {panic(err)}
 	for layer in nn.layers {
 		l_type := layer_type(layer)
@@ -92,8 +92,8 @@ pub fn (mut nn NeuralNetwork) save_model() {
 	file.close()
 }
 
-pub fn (mut nn NeuralNetwork) load_model() {
-	mut load := os.open('save') or {panic(err)}
+pub fn (mut nn NeuralNetwork) load_model(save_name string) {
+	mut load := os.open(save_name) or {panic(err)}
 	nb_layers := load.read_raw[i64]() or {panic(err)}
 	for _ in 0..nb_layers {
 		ltype := load.read_raw[LayerType]() or {panic(err)}
@@ -118,5 +118,4 @@ pub fn (mut nn NeuralNetwork) load_model() {
 		}
 		nn.add_layer(layer_base)
 	}
-	println(nn)
 }
