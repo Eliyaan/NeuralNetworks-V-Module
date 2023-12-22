@@ -105,7 +105,11 @@ pub fn (mut nn NeuralNetwork) load_model() {
 				layer_base.output_size = load.read_raw[i64]() or {panic(err)}
 				matrix_size := int(layer_base.input_size*layer_base.output_size)
 				layer_base.weights = la.Matrix.raw(int(layer_base.output_size), int(layer_base.input_size), []f64{len:matrix_size, init:index-index+load.read_raw[f64]() or {panic(err)}})
+				layer_base.weights_gradient = la.Matrix.new[f64](int(layer_base.output_size), int(layer_base.input_size))
+				layer_base.old_weights_gradient = la.Matrix.new[f64](int(layer_base.output_size), int(layer_base.input_size))
 				layer_base.bias = []f64{len:int(layer_base.output_size), init:index-index+load.read_raw[f64]() or {panic(err)}}
+				layer_base.bias_gradient = []f64{len:int(layer_base.output_size)}
+				layer_base.old_bias_gradient = []f64{len:int(layer_base.output_size)}
 			}
 			Activation {
 				layer_base = Activation.new(load.read_raw[ActivationFunctions]() or {panic(err)})				

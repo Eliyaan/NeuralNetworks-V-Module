@@ -28,7 +28,7 @@ fn main() {
 	training_parameters := nn.TrainingParams {
 		learning_rate: 0.37
 		momentum: 0.5
-		nb_epochs: 300
+		nb_epochs: 100
 		print_interval: 50
 		cost_function: .mse // mean squared error
 		training_inputs: [[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]]
