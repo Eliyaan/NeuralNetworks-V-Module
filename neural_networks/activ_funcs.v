@@ -7,7 +7,7 @@ pub enum ActivationFunctions {
 	leaky_relu
 }
 
-fn get_activ_function(f ActivationFunctions) (fn(f64) f64, fn(f64) f64) {
+fn get_activ_function(f ActivationFunctions) (fn (f64) f64, fn (f64) f64) {
 	match f {
 		.tanh { return tanh, tanh_prime }
 		.leaky_relu { return lrelu, lrelu_prime }
@@ -22,7 +22,7 @@ pub fn tanh(a f64) f64 {
 @[inline]
 pub fn tanh_prime(a f64) f64 {
 	tanha := math.tanh(a)
-	return 1 - tanha*tanha
+	return 1 - tanha * tanha
 }
 
 @[inline]

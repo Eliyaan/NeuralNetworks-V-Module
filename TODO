@@ -1,0 +1,11 @@
+Needed:
+- image processing & gui to see the dataaugmented images
+- pooling layer
+- classifier utilities like accuracy
+- train the mnist & adapt the gui
+
+
+Later:
+- Convolution layer
+- multithreading / GPU
+- option to save the costs for momentum ?

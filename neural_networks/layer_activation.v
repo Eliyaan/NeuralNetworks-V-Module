@@ -2,11 +2,11 @@ module neural_networks
 
 pub struct Activation {
 mut:
-	input []f64
-	output []f64
-	activ_type ActivationFunctions
-	activ fn(n f64) f64 @[required]
-	activ_prime fn(n f64) f64 @[required]
+	input       []f64
+	output      []f64
+	activ_type  ActivationFunctions
+	activ       fn (n f64) f64      @[required]
+	activ_prime fn (n f64) f64      @[required]
 }
 
 pub fn Activation.new(activ_type ActivationFunctions) Activation {
@@ -34,7 +34,7 @@ pub fn (mut a Activation) apply_grad(nb_elems_seen int, lr f64, momentum f64) {
 pub fn (mut a Activation) reset() {
 }
 
-pub fn vector_apply_func(mut a []f64, f fn(n f64) f64 ) {
+pub fn vector_apply_func(mut a []f64, f fn (n f64) f64) {
 	for mut elem in a {
 		elem = f(elem)
 	}
