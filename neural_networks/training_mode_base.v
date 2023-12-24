@@ -11,6 +11,7 @@ interface TrainingMode {
 }
 
 pub struct Dataset {
+pub mut:
 	inputs  [][]f64
 	expected_outputs [][]f64
 }

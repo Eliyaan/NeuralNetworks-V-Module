@@ -1,7 +1,7 @@
 Needed:
 - image processing & gui to see the dataaugmented images
 - pooling layer
-- classifier utilities like accuracy
+- classifier utilities like accuracy & classifier loss
 - train the mnist & adapt the gui
 
 
