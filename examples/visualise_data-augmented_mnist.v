@@ -14,7 +14,7 @@ import rand.config as rdconfig
 /*
 TODO:
 Buttons with click color change, text change etc
-to make the module ransform ids into ints when creating function etc / in arguments
+to make the module transform ids into ints when creating function etc / in arguments
 */
 
 const (
@@ -55,6 +55,7 @@ enum Ids {
 	offset_range_text
 	noise_range_text
 	noise_probability_text
+	scale_range_text
 }
 
 struct App {
@@ -68,6 +69,7 @@ mut:
 	offset_range int = 4
 	noise_probability int = 5
 	noise_range int = 255
+	scale_range f64 = 0.2
 	augment_asked bool
 }
 
@@ -112,6 +114,11 @@ fn main() {
 	app.clickables << Button{Id{}, x_buttons_offset+50, 85, buttons_shape, minus_text, red, sub_noise_probability}
 	app.clickables << Button{Id{}, x_buttons_offset+75, 85, buttons_shape, plus_text, green, add_noise_probability}
 	app.elements << Text{Id{.noise_probability_text}, x_buttons_offset+45, 85, "Noise probability: ${app.noise_probability}", button_description_cfg}
+
+	app.clickables << Button{Id{}, x_buttons_offset+50, 110, buttons_shape, minus_text, red, sub_scale_range}
+	app.clickables << Button{Id{}, x_buttons_offset+75, 110, buttons_shape, plus_text, green, add_scale_range}
+	app.elements << Text{Id{.scale_range_text}, x_buttons_offset+45, 110, "Scale range: ${app.scale_range}", button_description_cfg}
+
 
 	app.augment_images()
     app.gg.run()
@@ -261,7 +268,9 @@ fn (mut app App) augment_images() {
 }
 
 fn (mut app App) augment(i int) {
-	app.dataset.inputs[i] = rand_offset_image(app.base_dataset.inputs[i], app.offset_range)
+	app.dataset.inputs[i] = scale_img(app.base_dataset.inputs[i], rd.f64_in_range(1-app.scale_range, 1+app.scale_range) or {0})
+	app.dataset.inputs[i] = rand_offset_image(app.dataset.inputs[i], app.offset_range)
+	app.dataset.inputs[i] = crop(app.dataset.inputs[i])
 	app.dataset.inputs[i] = rand_noise(app.dataset.inputs[i], app.noise_probability, app.noise_range)
 }
 
@@ -400,6 +409,18 @@ fn sub_noise_probability(mut app App) {
 	ask_augment(mut app)
 }
 
+fn add_scale_range(mut app App) {
+	app.scale_range = math.round_sig(app.scale_range+0.01, 2)
+	app.change_text(Id{.scale_range_text}, "Scale range: ${app.scale_range}")
+	ask_augment(mut app)
+}
+
+fn sub_scale_range(mut app App) {
+	app.scale_range = math.round_sig(app.scale_range-0.01, 2)
+	app.change_text(Id{.scale_range_text}, "Scale range: ${app.scale_range}")
+	ask_augment(mut app)
+}
+
 enum Pos {
 	center
 	top_right
@@ -497,22 +518,38 @@ fn get_center_of_mass(a []f64) (int, int) {
 		x /= cpt
 		y /= cpt
 	}
-	return int(x - im_size / 2), int(y - im_size / 2) // offset (half image size)
+	return int(x - 28 / 2), int(y - 28 / 2) // offset (half goal image size)
 }
 
 @[direct_array_access]
-pub fn rand_offset_image(a []f64, offset_range int) []f64 {
+pub fn rand_offset_image(a []f64, offset_range int) []f64 { // centers and offsets
 	mut offset_x, mut offset_y := get_center_of_mass(a)
-	im_size := int(math.sqrt(a.len))
+	base_im_size := ceil(math.sqrt(a.len))
 	if offset_range > 0 {
 		offset_x += rd.int_in_range(-offset_range, offset_range + 1) or { panic(err) }
 		offset_y += rd.int_in_range(-offset_range, offset_range + 1) or { panic(err) }
 	}
-	mut output := []f64{cap: im_size * im_size}
-	for l in 0 .. im_size {
-		for c in 0 .. im_size {
-			if in_range(offset_x + c, offset_y + l, 0, 0, im_size, im_size) {
-				output << a[(offset_y + l) * im_size + offset_x + c]
+	mut output := []f64{cap: base_im_size * base_im_size}
+	for l in 0 .. base_im_size {
+		for c in 0 .. base_im_size {
+			if in_range(offset_x + c, offset_y + l, 0, 0, base_im_size, base_im_size) {
+				output << a[a_coords(offset_y + l, offset_x + c, base_im_size)]
+			} else {
+				output << 0.0
+			}
+		}
+	}
+	return output
+}
+
+@[direct_array_access]
+fn crop(a []f64) []f64 {
+	base_im_size := ceil(math.sqrt(a.len))
+	mut output := []f64{cap: 28 * 28}
+	for l in 0 .. 28 {
+		for c in 0 .. 28 {
+			if in_range(c, l, 0, 0, base_im_size, base_im_size) {
+				output << a[a_coords(l, c, base_im_size)]
 			} else {
 				output << 0.0
 			}
@@ -535,6 +572,167 @@ pub fn rand_noise(a []f64, noise_probability int, noise_range int) []f64 {
 		return a
 	}
 }
+
+@[direct_array_access]
+pub fn scale_img(a []f64, scale_goal f64) []f64 {
+	scaled_side := ceil(f64(28) * scale_goal)
+	if scaled_side != 28 {
+		mut new_a := []f64{len: scaled_side * scaled_side, cap: scaled_side * scaled_side}
+		for l in 0 .. scaled_side {
+			for c in 0 .. scaled_side {
+				// Index in the new array of the current pixel
+				new_i := l * scaled_side + c
+				// needs division (for proportionality) but only if needed :
+				mut val_l := f64(l * (28 - 1))
+				mut val_c := f64(c * (28 - 1))
+
+				// if the division is a integer (it corresponds to an exact pixel)
+				l_is_int := int(val_l) % (scaled_side - 1) != 0
+				c_is_int := int(val_c) % (scaled_side - 1) != 0
+				// divide
+				val_l /= (scaled_side - 1)
+				val_c /= (scaled_side - 1)
+				int_val_l := int(val_l)
+				int_val_c := int(val_c)
+				// Take the right pixel values
+				if l_is_int && c_is_int {
+					new_a[new_i] = a[int(val_l) * 28 + int_val_c]
+				} else if !(l_is_int || c_is_int) {  // none of them
+					new_a[new_i] = a[a_coords(int_val_l, int_val_c, 28)] * float_gap(val_c) * float_gap(val_l) +
+						a[a_coords(int_val_l, ceil(val_c), 28)] * float_offset(val_c) * float_gap(val_l) +
+						a[a_coords(ceil(val_l), int_val_c, 28)] * float_offset(val_l) * float_gap(val_c) +
+						a[a_coords(ceil(val_l), ceil(val_c), 28)] * float_offset(val_l) * float_offset(val_c)
+				} else if l_is_int {  // exact line (not useful for squares I think but there if needed)
+					new_a[new_i] = a[a_coords(int_val_l, int_val_c, 28)] * float_gap(val_c) +
+						a[a_coords(int_val_l, ceil(val_c), 28)] * float_offset(val_c)
+				} else {  // exact collumn (not useful for squares I think but there if needed)
+					new_a[new_i] = a[a_coords(int_val_l, int_val_c, 28)] * float_gap(val_l) + 
+						a[a_coords(ceil(val_l), int_val_c, 28)] * float_offset(val_l)
+				}
+			}
+		}
+		return new_a // needs to be cropped
+	} else {
+		return a
+	}
+}
+
+@[inline]
+// array 28*28 image coordinates
+fn a_coords(y int, x int, size int) int {
+	return y * size + x
+}
+
+// the decimal part
+@[inline]
+fn float_offset(f f64) f64 {
+	return f - int(f)
+}
+
+@[inline]
+fn float_gap(f f64) f64 {
+	return 1 - float_offset(f)
+}
+
+/*
+@[direct_array_access]
+pub fn rotate(a []f64, alpha f64, im_size int) ([]f64, int) {
+	if alpha != 0 {
+		angle := math.radians(alpha)
+
+		full_x := (im_size - 1) * math.cos(angle) - (im_size - 1) * math.sin(angle)
+		full_y := (im_size - 1) * math.sin(angle) + (im_size - 1) * math.cos(angle)
+		only_x_x := (im_size - 1) * math.cos(angle) // - 0*math.sin(angle)
+		only_x_y := (im_size - 1) * math.sin(angle) // + 0*math.cos(angle)
+		only_y_x := -(im_size - 1) * math.sin(angle)
+		only_y_y := (im_size - 1) * math.cos(angle)
+		max_x := (max([full_x, only_x_x, only_y_x, 0]))
+		min_x := (min([full_x, only_x_x, only_y_x, 0]))
+		max_y := (max([full_y, only_x_y, only_y_y, 0]))
+		min_y := (min([full_y, only_x_y, only_y_y, 0]))
+		size_x := f64(max_x - min_x + 1)
+		size_y := f64(max_y - min_y + 1)
+
+		side := int(math.sqrt(round_to_greater(round_to_greater(size_x) * round_to_greater(size_y))))
+		mut output := []f64{cap: side * side}
+		mut twod_output := [][]f64{len: side, cap: side, init: []f64{len: side, cap: side}} // need to opti
+		for i, pixel in a {
+			if pixel > 0 {
+				x := f64(i % im_size) - (f64(im_size)) / 2.0 + 0.5
+				y := f64(i / im_size) - (f64(im_size)) / 2.0 + 0.5
+				xn := x * math.cos(angle) - y * math.sin(angle)
+				yn := x * math.sin(angle) + y * math.cos(angle)
+
+				array_coord_y := math.max(yn + side / 2 - 0.5, 0)
+				array_coord_x := math.max(xn + side / 2 - 0.5, 0)
+				twod_output[int(array_coord_y)][int(array_coord_x)] += f64(pixel * (1 - (array_coord_y - int(array_coord_y))) * (1 - (array_coord_x - int(array_coord_x))))
+				if twod_output[int(array_coord_y)][int(array_coord_x)] > 255 {
+					twod_output[int(array_coord_y)][int(array_coord_x)] = 255
+				}
+				twod_output[int(array_coord_y)][int(ceil_f(array_coord_x))] += f64(pixel * (1 - (array_coord_y - int(array_coord_y))) * (array_coord_x - int(array_coord_x)))
+				if twod_output[int(array_coord_y)][int(ceil_f(array_coord_x))] > 255 {
+					twod_output[int(array_coord_y)][int(ceil_f(array_coord_x))] = 255
+				}
+				twod_output[int(ceil_f(array_coord_y))][int(array_coord_x)] += f64(pixel * (array_coord_y - int(array_coord_y)) * (1 - (array_coord_x - int(array_coord_x))))
+				if twod_output[int(ceil_f(array_coord_y))][int(array_coord_x)] > 255 {
+					twod_output[int(ceil_f(array_coord_y))][int(array_coord_x)] = 255
+				}
+				twod_output[int(ceil_f(array_coord_y))][int(ceil_f(array_coord_x))] += f64(pixel * (array_coord_y - int(array_coord_y)) * (array_coord_x - int(array_coord_x)))
+				if twod_output[int(ceil_f(array_coord_y))][int(ceil_f(array_coord_x))] > 255 {
+					twod_output[int(ceil_f(array_coord_y))][int(ceil_f(array_coord_x))] = 255
+				}
+			}
+		}
+		for row in twod_output {
+			output << row
+		}
+		return output, side
+	} else {
+		return a, im_size
+	}
+}
+
+@[direct_array_access; inline]
+fn max(a []f64) f64 {
+	mut highest := 0
+	for nb, val in a {
+		if val > a[highest] {
+			highest = nb
+		}
+	}
+	return a[highest]
+}
+
+@[direct_array_access; inline]
+fn min(a []f64) f64 {
+	mut highest := 0
+	for nb, val in a {
+		if val < a[highest] {
+			highest = nb
+		}
+	}
+	return a[highest]
+}
+
+@[inline]
+fn round_to_greater(nb f64) f64 {
+	if nb >= 0 {
+		return ceil_f(math.round_sig(nb, 5))
+	} else {
+		return f64(int(math.round_sig(nb, 5)))
+	}
+}
+
+@[inline]
+fn floor_f(nb f64) f64 {
+	return f64(int(nb))
+}
+*/
+@[inline]
+fn ceil(nb f64) int {
+	return -int(-nb)
+}
+
 
 fn in_range[T](x T, y T, x_start T, y_start T, x_end T, y_end T) bool {
 	return x >= x_start && x < x_end && y >= y_start && y < y_end
