@@ -13,22 +13,33 @@ import rand.config as rdconfig
 
 /*
 TODO:
-Text struct to render nice text (and on buttons)
 Buttons with click color change, text change etc
 */
 
 const (
-    win_width    = 601
-    win_height   = 601
-    bg_color     = gx.white
-	px_size		 = 4
+    win_width   	= 601
+    win_height  	= 601
+    bg_color    	= gx.white
+	px_size			= 4
+	x_buttons_offset= 300
+	buttons_shape	= ButtonShape{20, 20, 5, .top_right}
 )
 
+struct Id {
+	id Ids
+}
+
+enum Ids {
+	@none 	
+	img_nb_text
+	img_label
+}
 
 struct App {
 mut:
     gg    &gg.Context = unsafe { nil }
-	objects []Object
+	clickables []Clickable
+	elements []Element
 	base_dataset nn.Dataset
 	dataset nn.Dataset
 	actual_image int
@@ -54,15 +65,28 @@ fn main() {
     )
 	app.base_dataset = load_mnist_training(100)
 	app.dataset = app.base_dataset.clone()
-	app.objects << Button{150, 10, "-", 20, 20, .top_right, gx.red, 5, prev_img}
-	app.objects << Button{175, 10, "+", 20, 20, .top_right, gx.green, 5, next_img}
-	app.objects << Button{205, 10, "~", 20, 20, .top_right, gx.gray, 5, ask_augment}
-	app.objects << Button{150, 35, "-", 20, 20, .top_right, gx.red, 5, sub_offset}
-	app.objects << Button{175, 35, "+", 20, 20, .top_right, gx.green, 5, add_offset}
-	app.objects << Button{150, 60, "-", 20, 20, .top_right, gx.red, 5, sub_noise_range}
-	app.objects << Button{175, 60, "+", 20, 20, .top_right, gx.green, 5, add_noise_range}
-	app.objects << Button{150, 85, "-", 20, 20, .top_right, gx.red, 5, sub_noise_probability}
-	app.objects << Button{175, 85, "+", 20, 20, .top_right, gx.green, 5, add_noise_probability}
+
+	plus_text := Text{Id{}, 0, 0, "+", gx.TextCfg{color:gx.black, size:20, align:.center, vertical_align:.middle}}
+	minus_text := Text{Id{}, 0, 0, "-", gx.TextCfg{color:gx.black, size:20, align:.center, vertical_align:.middle}}
+	reload_text := Text{Id{}, 0, 0, "~", gx.TextCfg{color:gx.black, size:20, align:.center, vertical_align:.middle}}
+
+	app.elements << Text{Id{.img_label}, 14*px_size, 28*px_size, match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str(), gx.TextCfg{color:gx.dark_green, size:20, align:.center, vertical_align:.top}}
+
+	app.clickables << Button{Id{}, x_buttons_offset+50, 10, buttons_shape, minus_text, gx.red, prev_img}
+	app.clickables << Button{Id{}, x_buttons_offset+75, 10, buttons_shape, plus_text, gx.green, next_img}
+	app.elements << Text{Id{.img_nb_text}, x_buttons_offset+45, 10, "Image n°${app.actual_image}", gx.TextCfg{color:gx.black, size:20, align:.right, vertical_align:.top}}
+
+	app.clickables << Button{Id{}, x_buttons_offset+105, 10, buttons_shape, reload_text, gx.gray, ask_augment}
+
+	app.clickables << Button{Id{}, x_buttons_offset+50, 35, buttons_shape, minus_text, gx.red, sub_offset}
+	app.clickables << Button{Id{}, x_buttons_offset+75, 35, buttons_shape, plus_text, gx.green, add_offset}
+
+	app.clickables << Button{Id{}, x_buttons_offset+50, 60, buttons_shape, minus_text, gx.red, sub_noise_range}
+	app.clickables << Button{Id{}, x_buttons_offset+75, 60, buttons_shape, plus_text, gx.green, add_noise_range}
+
+	app.clickables << Button{Id{}, x_buttons_offset+50, 85, buttons_shape, minus_text, gx.red, sub_noise_probability}
+	app.clickables << Button{Id{}, x_buttons_offset+75, 85, buttons_shape, plus_text, gx.green, add_noise_probability}
+
 	app.augment_images()
     app.gg.run()
 }
@@ -70,12 +94,13 @@ fn main() {
 fn on_frame(mut app App) {
     //Draw
     app.gg.begin()
-	app.render_image()
-	app.render_objects()
 	if app.augment_asked {
 		app.augment(app.actual_image)
 		app.augment_asked = false
 	}
+	app.render_image()
+	app.render_clickables()
+	app.render_elements()
     app.gg.end()
 }
 
@@ -93,30 +118,114 @@ fn on_event(e &gg.Event, mut app App){
 					app.check(int(e.mouse_x), int(e.mouse_y))
 				}
                 else{}
-        }}
+        	}
+		}
         else {}
     }
 }
 
-interface Object {
-	x f32
-	y f32
+fn (mut app App) get_clickables_with_id(id Id) []&Clickable{
+	mut result := []&Clickable{}
+	for obj in app.clickables {
+		unsafe {
+			if obj.id.id == id.id {
+				result << &obj
+			}
+		}
+	}
+	return result
+}
+
+fn (mut app App) get_clickable_with_id(id Id) !&Clickable{
+	for obj in app.clickables {
+		unsafe {
+			if obj.id.id == id.id {
+				return &obj
+			}
+		}
+	}
+	return error("No object matching")
+}
+
+fn (mut app App) get_elements_with_id(id Id) []&Element{
+	mut result := []&Element{}
+	for obj in app.elements {
+		unsafe {
+			if obj.id.id == id.id {
+				result << &obj
+			}
+		}
+	}
+	return result
+}
+
+fn (mut app App) get_element_with_id(id Id) !&Element{
+	for obj in app.elements {
+		unsafe {
+			if obj.id.id == id.id {
+				return &obj
+			}
+		}
+	}
+	return error("No object matching")
+}
+
+
+interface Shape {
 	width f32
 	height f32
+	relative_pos Pos
+}
+
+interface Clickable {
+	id Id
+	x f32
+	y f32
+	shape Shape
 	click_func fn (mut app App)
 	render(mut app App)
 }
 
-struct Button { // refaire pour meilleur texte
+interface Element {
+	id Id
+	x f32
+	y f32
+	render(mut app App, x_offset f32, y_offset f32)
+}
+
+struct ButtonShape {
+	width f32
+	height f32
+	rounded int
+	relative_pos Pos
+}
+
+@[heap]
+struct Button {
+mut:
+	id Id
+	x f32
+	y f32
+	shape Shape
+	text Text
+	color gx.Color
+	click_func fn (mut app App) @[required]
+}
+
+@[heap]
+struct Text {
+mut:
+	id Id
 	x f32
 	y f32
 	text string
-	width f32
-	height f32
-	relative_pos Pos
-	color gx.Color
-	rounded int
-	click_func fn (mut app App) @[required]
+	cfg gx.TextCfg
+}
+
+fn (t Text) render(mut app App, x_offset f32, y_offset f32) {
+	if t.text != "" {
+		app.gg.draw_text(int(t.x + x_offset), int(t.y + y_offset), t.text, t.cfg)
+	}
 }
 
 fn (mut app App) augment_images() {
@@ -131,16 +240,75 @@ fn (mut app App) augment(i int) {
 }
 
 fn (mut app App) check(mouse_x int, mouse_y int) { // need to do the relative pos
-	for obj in app.objects {
-		if in_range(f32(mouse_x), f32(mouse_y), obj.x, obj.y, obj.x + obj.width, obj.y + obj.height) {
+	for obj in app.clickables {
+		mut x_coo := obj.x
+		mut y_coo := obj.y
+		match obj.shape.relative_pos {
+			.center {
+				x_coo -= obj.shape.width/2
+				y_coo -= obj.shape.height/2
+			}
+			.top_right {}
+			.top_left {
+				x_coo -= obj.shape.width
+			}
+			.bottom_right {
+				y_coo -= obj.shape.height
+			}
+			.bottom_left {
+				y_coo -= obj.shape.height
+				x_coo -= obj.shape.width
+			}
+		}
+		if in_range(f32(mouse_x), f32(mouse_y), x_coo, y_coo, x_coo + obj.shape.width, y_coo + obj.shape.height) {
 			obj.click_func(mut app)
 		}
 	}
 }
 
-fn (b Button) render(mut app App) { // need to do the relative pos
-	app.gg.draw_rounded_rect_filled(b.x, b.y, b.width, b.height, b.rounded, b.color)
-	app.gg.draw_text(int(b.x), int(b.y), b.text, gx.TextCfg{})
+fn (b Button) render(mut app App) {
+	mut x_coo := b.x
+	mut y_coo := b.y
+	mut text_x_offset := b.x
+	mut text_y_offset := b.y
+	match b.shape.relative_pos {
+		.center {
+			x_coo -= b.shape.width/2
+			y_coo -= b.shape.height/2
+		}
+		.top_right {
+			text_x_offset += b.shape.width/2
+			text_y_offset += b.shape.height/2
+		}
+		.top_left {
+			x_coo -= b.shape.width
+			text_x_offset -= b.shape.width/2
+			text_y_offset -= b.shape.height/2
+		}
+		.bottom_right {
+			y_coo -= b.shape.height
+			text_x_offset += b.shape.width/2
+			text_y_offset -= b.shape.height/2
+		}
+		.bottom_left {
+			y_coo -= b.shape.height
+			x_coo -= b.shape.width
+			text_x_offset -= b.shape.width/2
+			text_y_offset -= b.shape.height/2
+		}
+	}
+	match b.shape {
+		ButtonShape {app.gg.draw_rounded_rect_filled(x_coo, y_coo, b.shape.width, b.shape.height, b.shape.rounded, b.color)}
+		else {app.gg.draw_rect_filled(x_coo, y_coo, b.shape.width, b.shape.height, b.color)}
+	}
+	b.text.render(mut app, text_x_offset, text_y_offset) // need to add the relative pos
+}
+
+fn (mut app App) change_text(id Id, text string) {
+	mut text_obj := app.get_element_with_id(id) or {panic(err)}
+	if mut text_obj is Text {
+		text_obj.text = text
+	}
 }
 
 fn next_img(mut app App) {
@@ -149,6 +317,9 @@ fn next_img(mut app App) {
 	}else{
 		app.actual_image += 1
 	}
+	app.change_text(Id{.img_nb_text}, "Image n°${app.actual_image}")
+	app.change_text(Id{.img_label}, match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str())
+
 	ask_augment(mut app)
 }
 
@@ -158,6 +329,8 @@ fn prev_img(mut app App) {
 	}else{
 		app.actual_image -= 1
 	}
+	app.change_text(Id{.img_nb_text}, "Image n°${app.actual_image}")
+	app.change_text(Id{.img_label}, match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str())
 	ask_augment(mut app)
 }
 
@@ -203,9 +376,15 @@ enum Pos {
 	bottom_left
 }
 
-fn (mut app App) render_objects() {
-	for obj in app.objects {
+fn (mut app App) render_clickables() {
+	for obj in app.clickables {
 		obj.render(mut app)
+	}
+}
+
+fn (mut app App) render_elements() {
+	for elem in app.elements {
+		elem.render(mut app, 0, 0)
 	}
 }
 
@@ -217,7 +396,6 @@ fn (mut app App) render_image() {
 			app.gg.draw_rect_filled(f32(x*px_size), f32(y*px_size), px_size, px_size, gx.Color{px,px,px,255})
 		}
 	}
-	app.gg.draw_text(0, int(img_size*px_size), match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str(), gx.TextCfg{})
 }
 
 @[direct_array_access]
