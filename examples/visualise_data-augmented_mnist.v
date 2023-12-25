@@ -14,12 +14,31 @@ import rand.config as rdconfig
 /*
 TODO:
 Buttons with click color change, text change etc
+to make the module ransform ids into ints when creating function etc / in arguments
 */
 
 const (
+	// Mocha:
+	surface0		= gx.Color{30, 30, 46, 255}
+	lavender		= gx.Color{180, 190, 254, 255}
+	blue			= gx.Color{137, 180, 250, 255}
+	sapphire		= gx.Color{116, 199, 236, 255}
+	sky				= gx.Color{137, 220, 235, 255}
+	teal			= gx.Color{148, 227, 213, 255}
+	green			= gx.Color{166, 214, 161, 255}
+	yellow			= gx.Color{249, 226, 175, 255}
+	peach			= gx.Color{250, 179, 135, 255}
+	maroon			= gx.Color{235, 160, 172, 255}
+	red				= gx.Color{243, 139, 168, 255}
+	mauve			= gx.Color{203, 166, 247, 255}
+	pink			= gx.Color{245, 194, 231, 255}
+	flamingo		= gx.Color{242, 205, 205, 255}
+	rosewater		= gx.Color{245, 224, 220, 255}
+	mocha_text			= gx.Color{205, 214, 244, 255}
+	
     win_width   	= 601
     win_height  	= 601
-    bg_color    	= gx.white
+    bg_color    	= surface0
 	px_size			= 4
 	x_buttons_offset= 300
 	buttons_shape	= ButtonShape{20, 20, 5, .top_right}
@@ -33,6 +52,9 @@ enum Ids {
 	@none 	
 	img_nb_text
 	img_label
+	offset_range_text
+	noise_range_text
+	noise_probability_text
 }
 
 struct App {
@@ -44,7 +66,7 @@ mut:
 	dataset nn.Dataset
 	actual_image int
 	offset_range int = 4
-	noise_probability int = 28
+	noise_probability int = 5
 	noise_range int = 255
 	augment_asked bool
 }
@@ -55,7 +77,7 @@ fn main() {
         width: win_width
         height: win_height
         create_window: true
-        window_title: '- Application -'
+        window_title: 'Mnist Data Augmentation Visualiser'
         user_data: app
         bg_color: bg_color
         frame_fn: on_frame
@@ -66,26 +88,30 @@ fn main() {
 	app.base_dataset = load_mnist_training(100)
 	app.dataset = app.base_dataset.clone()
 
-	plus_text := Text{Id{}, 0, 0, "+", gx.TextCfg{color:gx.black, size:20, align:.center, vertical_align:.middle}}
-	minus_text := Text{Id{}, 0, 0, "-", gx.TextCfg{color:gx.black, size:20, align:.center, vertical_align:.middle}}
-	reload_text := Text{Id{}, 0, 0, "~", gx.TextCfg{color:gx.black, size:20, align:.center, vertical_align:.middle}}
+	plus_text := Text{Id{}, 0, 0, "+", gx.TextCfg{color:surface0, size:20, align:.center, vertical_align:.middle}}
+	minus_text := Text{Id{}, 0, 0, "-", gx.TextCfg{color:surface0, size:20, align:.center, vertical_align:.middle}}
+	reload_text := Text{Id{}, 0, 0, "~", gx.TextCfg{color:surface0, size:20, align:.center, vertical_align:.middle}}
+	button_description_cfg := gx.TextCfg{color:mocha_text, size:20, align:.right, vertical_align:.top}
 
-	app.elements << Text{Id{.img_label}, 14*px_size, 28*px_size, match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str(), gx.TextCfg{color:gx.dark_green, size:20, align:.center, vertical_align:.top}}
+	app.elements << Text{Id{.img_label}, 14*px_size, 28*px_size, match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str(), gx.TextCfg{color:mocha_text, size:20, align:.center, vertical_align:.top}}
 
-	app.clickables << Button{Id{}, x_buttons_offset+50, 10, buttons_shape, minus_text, gx.red, prev_img}
-	app.clickables << Button{Id{}, x_buttons_offset+75, 10, buttons_shape, plus_text, gx.green, next_img}
-	app.elements << Text{Id{.img_nb_text}, x_buttons_offset+45, 10, "Image n°${app.actual_image}", gx.TextCfg{color:gx.black, size:20, align:.right, vertical_align:.top}}
+	app.clickables << Button{Id{}, x_buttons_offset+50, 10, buttons_shape, minus_text, red, prev_img}
+	app.clickables << Button{Id{}, x_buttons_offset+75, 10, buttons_shape, plus_text, green, next_img}
+	app.elements << Text{Id{.img_nb_text}, x_buttons_offset+45, 10, "Image n°${app.actual_image}", button_description_cfg}
 
-	app.clickables << Button{Id{}, x_buttons_offset+105, 10, buttons_shape, reload_text, gx.gray, ask_augment}
+	app.clickables << Button{Id{}, x_buttons_offset+105, 10, buttons_shape, reload_text, flamingo, ask_augment}
 
-	app.clickables << Button{Id{}, x_buttons_offset+50, 35, buttons_shape, minus_text, gx.red, sub_offset}
-	app.clickables << Button{Id{}, x_buttons_offset+75, 35, buttons_shape, plus_text, gx.green, add_offset}
+	app.clickables << Button{Id{}, x_buttons_offset+50, 35, buttons_shape, minus_text, red, sub_offset}
+	app.clickables << Button{Id{}, x_buttons_offset+75, 35, buttons_shape, plus_text, green, add_offset}
+	app.elements << Text{Id{.offset_range_text}, x_buttons_offset+45, 35, "Offset range: ${app.offset_range}", button_description_cfg}
 
-	app.clickables << Button{Id{}, x_buttons_offset+50, 60, buttons_shape, minus_text, gx.red, sub_noise_range}
-	app.clickables << Button{Id{}, x_buttons_offset+75, 60, buttons_shape, plus_text, gx.green, add_noise_range}
+	app.clickables << Button{Id{}, x_buttons_offset+50, 60, buttons_shape, minus_text, red, sub_noise_range}
+	app.clickables << Button{Id{}, x_buttons_offset+75, 60, buttons_shape, plus_text, green, add_noise_range}
+	app.elements << Text{Id{.noise_range_text}, x_buttons_offset+45, 60, "Noise range: ${app.noise_range}", button_description_cfg}
 
-	app.clickables << Button{Id{}, x_buttons_offset+50, 85, buttons_shape, minus_text, gx.red, sub_noise_probability}
-	app.clickables << Button{Id{}, x_buttons_offset+75, 85, buttons_shape, plus_text, gx.green, add_noise_probability}
+	app.clickables << Button{Id{}, x_buttons_offset+50, 85, buttons_shape, minus_text, red, sub_noise_probability}
+	app.clickables << Button{Id{}, x_buttons_offset+75, 85, buttons_shape, plus_text, green, add_noise_probability}
+	app.elements << Text{Id{.noise_probability_text}, x_buttons_offset+45, 85, "Noise probability: ${app.noise_probability}", button_description_cfg}
 
 	app.augment_images()
     app.gg.run()
@@ -340,31 +366,37 @@ fn ask_augment(mut app App) {
 
 fn add_offset(mut app App) {
 	app.offset_range += 1
+	app.change_text(Id{.offset_range_text}, "Offset range: ${app.offset_range}")
 	ask_augment(mut app)
 }
 
 fn sub_offset(mut app App) {
 	app.offset_range -= 1
+	app.change_text(Id{.offset_range_text}, "Offset range: ${app.offset_range}")
 	ask_augment(mut app)
 }
 
 fn add_noise_range(mut app App) {
 	app.noise_range += 1
+	app.change_text(Id{.noise_range_text}, "Noise range: ${app.noise_range}")
 	ask_augment(mut app)
 }
 
 fn sub_noise_range(mut app App) {
 	app.noise_range -= 1
+	app.change_text(Id{.noise_range_text}, "Noise range: ${app.noise_range}")
 	ask_augment(mut app)
 }
 
 fn add_noise_probability(mut app App) {
 	app.noise_probability += 1
+	app.change_text(Id{.noise_probability_text}, "Noise probability: ${app.noise_probability}")
 	ask_augment(mut app)
 }
 
 fn sub_noise_probability(mut app App) {
 	app.noise_probability -= 1
+	app.change_text(Id{.noise_probability_text}, "Noise probability: ${app.noise_probability}")
 	ask_augment(mut app)
 }
 
