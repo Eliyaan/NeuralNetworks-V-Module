@@ -52,7 +52,7 @@ enum Ids {
 	@none 	
 	img_nb_text
 	img_label
-	offset_range_text
+	final_scale_text
 	noise_range_text
 	noise_probability_text
 	scale_range_text
@@ -67,12 +67,13 @@ mut:
 	base_dataset nn.Dataset
 	dataset nn.Dataset
 	actual_image int
-	offset_range int = 4
-	noise_probability int = 5
+	final_scale f64 = 0.75
+	noise_probability int = 15
 	noise_range int = 255
 	scale_range f64 = 0.1
 	rota_range int = 30
-	augment_asked bool
+	final_nb_pixels int
+	augment_asked bool = true
 }
 
 fn main() {
@@ -105,9 +106,9 @@ fn main() {
 
 	app.clickables << Button{Id{}, x_buttons_offset+105, 10, buttons_shape, reload_text, flamingo, ask_augment}
 
-	app.clickables << Button{Id{}, x_buttons_offset+50, 35, buttons_shape, minus_text, red, sub_offset}
-	app.clickables << Button{Id{}, x_buttons_offset+75, 35, buttons_shape, plus_text, green, add_offset}
-	app.elements << Text{Id{.offset_range_text}, x_buttons_offset+45, 35, "Offset range: ${app.offset_range}", button_description_cfg}
+	app.clickables << Button{Id{}, x_buttons_offset+50, 35, buttons_shape, minus_text, red, sub_final_scale}
+	app.clickables << Button{Id{}, x_buttons_offset+75, 35, buttons_shape, plus_text, green, add_final_scale}
+	app.elements << Text{Id{.final_scale_text}, x_buttons_offset+45, 35, "Final scale: ${app.final_scale}", button_description_cfg}
 
 	app.clickables << Button{Id{}, x_buttons_offset+50, 60, buttons_shape, minus_text, red, sub_noise_range}
 	app.clickables << Button{Id{}, x_buttons_offset+75, 60, buttons_shape, plus_text, green, add_noise_range}
@@ -135,6 +136,9 @@ fn on_frame(mut app App) {
 	if app.augment_asked {
 		app.augment(app.actual_image)
 		app.augment_asked = false
+		mut img_label_text := app.get_element_with_id(Id{.img_label}) or {panic(err)}
+		img_label_text.y = app.final_nb_pixels*px_size
+		img_label_text.x = img_label_text.y/2
 	}
 	app.render_image()
 	app.render_clickables()
@@ -210,12 +214,14 @@ fn (mut app App) get_element_with_id(id Id) !&Element{
 
 
 interface Shape {
+mut:
 	width f32
 	height f32
 	relative_pos Pos
 }
 
 interface Clickable {
+mut:
 	id Id
 	x f32
 	y f32
@@ -225,6 +231,7 @@ interface Clickable {
 }
 
 interface Element {
+mut:
 	id Id
 	x f32
 	y f32
@@ -232,6 +239,7 @@ interface Element {
 }
 
 struct ButtonShape {
+mut:
 	width f32
 	height f32
 	rounded int
@@ -275,9 +283,11 @@ fn (mut app App) augment_images() {
 fn (mut app App) augment(i int) {
 	app.dataset.inputs[i] = rotate(app.base_dataset.inputs[i], rd.f64_in_range(-app.rota_range, app.rota_range) or {0})
 	app.dataset.inputs[i] = scale_img(app.dataset.inputs[i], rd.f64_in_range(1-app.scale_range, 1+app.scale_range) or {0})
-	app.dataset.inputs[i] = rand_offset_image(app.dataset.inputs[i], app.offset_range)
-	app.dataset.inputs[i] = crop(app.dataset.inputs[i])
 	app.dataset.inputs[i] = rand_noise(app.dataset.inputs[i], app.noise_probability, app.noise_range)
+	app.dataset.inputs[i] = center_image(app.dataset.inputs[i])
+	app.dataset.inputs[i] = crop(app.dataset.inputs[i])
+	app.dataset.inputs[i] = scale_img(app.dataset.inputs[i], app.final_scale)
+	app.final_nb_pixels = int(math.sqrt(app.dataset.inputs[i].len))
 }
 
 fn (mut app App) check(mouse_x int, mouse_y int) { // need to do the relative pos
@@ -342,7 +352,7 @@ fn (b Button) render(mut app App) {
 		ButtonShape {app.gg.draw_rounded_rect_filled(x_coo, y_coo, b.shape.width, b.shape.height, b.shape.rounded, b.color)}
 		else {app.gg.draw_rect_filled(x_coo, y_coo, b.shape.width, b.shape.height, b.color)}
 	}
-	b.text.render(mut app, text_x_offset, text_y_offset) // need to add the relative pos
+	b.text.render(mut app, text_x_offset, text_y_offset)
 }
 
 fn (mut app App) change_text(id Id, text string) {
@@ -379,15 +389,15 @@ fn ask_augment(mut app App) {
 	app.augment_asked = true
 }
 
-fn add_offset(mut app App) {
-	app.offset_range += 1
-	app.change_text(Id{.offset_range_text}, "Offset range: ${app.offset_range}")
+fn add_final_scale(mut app App) {
+	app.final_scale = math.round_sig(app.final_scale+0.05, 2)
+	app.change_text(Id{.final_scale_text}, "Final scale: ${app.final_scale}")
 	ask_augment(mut app)
 }
 
-fn sub_offset(mut app App) {
-	app.offset_range -= 1
-	app.change_text(Id{.offset_range_text}, "Offset range: ${app.offset_range}")
+fn sub_final_scale(mut app App) {
+	app.final_scale = math.round_sig(app.final_scale-0.05, 2)
+	app.change_text(Id{.final_scale_text}, "Final scale: ${app.final_scale}")
 	ask_augment(mut app)
 }
 
@@ -448,13 +458,13 @@ enum Pos {
 }
 
 fn (mut app App) render_clickables() {
-	for obj in app.clickables {
+	for mut obj in app.clickables {
 		obj.render(mut app)
 	}
 }
 
 fn (mut app App) render_elements() {
-	for elem in app.elements {
+	for mut elem in app.elements {
 		elem.render(mut app, 0, 0)
 	}
 }
@@ -536,17 +546,13 @@ fn get_center_of_mass(a []f64) (int, int) {
 		x /= cpt
 		y /= cpt
 	}
-	return int(x - 28 / 2), int(y - 28 / 2) // offset (half goal image size)
+	return int(x - 28 / 2), int(y - 28 / 2) // offset (half goal/crop image size)
 }
 
 @[direct_array_access]
-pub fn rand_offset_image(a []f64, offset_range int) []f64 { // centers and offsets
-	mut offset_x, mut offset_y := get_center_of_mass(a)
+pub fn center_image(a []f64) []f64 {
+	offset_x, offset_y := get_center_of_mass(a)
 	base_im_size := ceil(math.sqrt(a.len))
-	if offset_range > 0 {
-		offset_x += rd.int_in_range(-offset_range, offset_range + 1) or { panic(err) }
-		offset_y += rd.int_in_range(-offset_range, offset_range + 1) or { panic(err) }
-	}
 	mut output := []f64{cap: base_im_size * base_im_size}
 	for l in 0 .. base_im_size {
 		for c in 0 .. base_im_size {
@@ -593,16 +599,17 @@ pub fn rand_noise(a []f64, noise_probability int, noise_range int) []f64 {
 
 @[direct_array_access]
 pub fn scale_img(a []f64, scale_goal f64) []f64 {
-	scaled_side := ceil(f64(28) * scale_goal)
-	if scaled_side != 28 {
+	base_side := int(math.sqrt(a.len))
+	scaled_side := ceil(f64(base_side) * scale_goal)
+	if scaled_side != base_side {
 		mut new_a := []f64{len: scaled_side * scaled_side, cap: scaled_side * scaled_side}
 		for l in 0 .. scaled_side {
 			for c in 0 .. scaled_side {
 				// Index in the new array of the current pixel
 				new_i := l * scaled_side + c
 				// needs division (for proportionality) but only if needed :
-				mut val_l := f64(l * (28 - 1))
-				mut val_c := f64(c * (28 - 1))
+				mut val_l := f64(l * (base_side - 1))
+				mut val_c := f64(c * (base_side - 1))
 
 				// if the division is a integer (it corresponds to an exact pixel)
 				l_is_int := int(val_l) % (scaled_side - 1) != 0
@@ -614,18 +621,18 @@ pub fn scale_img(a []f64, scale_goal f64) []f64 {
 				int_val_c := int(val_c)
 				// Take the right pixel values
 				if l_is_int && c_is_int {
-					new_a[new_i] = a[int(val_l) * 28 + int_val_c]
+					new_a[new_i] = a[int(val_l) * base_side + int_val_c]
 				} else if !(l_is_int || c_is_int) {  // none of them
-					new_a[new_i] = a[a_coords(int_val_l, int_val_c, 28)] * float_gap(val_c) * float_gap(val_l) +
-						a[a_coords(int_val_l, ceil(val_c), 28)] * float_offset(val_c) * float_gap(val_l) +
-						a[a_coords(ceil(val_l), int_val_c, 28)] * float_offset(val_l) * float_gap(val_c) +
-						a[a_coords(ceil(val_l), ceil(val_c), 28)] * float_offset(val_l) * float_offset(val_c)
+					new_a[new_i] = a[a_coords(int_val_l, int_val_c, base_side)] * float_gap(val_c) * float_gap(val_l) +
+						a[a_coords(int_val_l, ceil(val_c), base_side)] * float_offset(val_c) * float_gap(val_l) +
+						a[a_coords(ceil(val_l), int_val_c, base_side)] * float_offset(val_l) * float_gap(val_c) +
+						a[a_coords(ceil(val_l), ceil(val_c), base_side)] * float_offset(val_l) * float_offset(val_c)
 				} else if l_is_int {  // exact line (not useful for squares I think but there if needed)
-					new_a[new_i] = a[a_coords(int_val_l, int_val_c, 28)] * float_gap(val_c) +
-						a[a_coords(int_val_l, ceil(val_c), 28)] * float_offset(val_c)
+					new_a[new_i] = a[a_coords(int_val_l, int_val_c, base_side)] * float_gap(val_c) +
+						a[a_coords(int_val_l, ceil(val_c), base_side)] * float_offset(val_c)
 				} else {  // exact collumn (not useful for squares I think but there if needed)
-					new_a[new_i] = a[a_coords(int_val_l, int_val_c, 28)] * float_gap(val_l) + 
-						a[a_coords(ceil(val_l), int_val_c, 28)] * float_offset(val_l)
+					new_a[new_i] = a[a_coords(int_val_l, int_val_c, base_side)] * float_gap(val_l) + 
+						a[a_coords(ceil(val_l), int_val_c, base_side)] * float_offset(val_l)
 				}
 			}
 		}
@@ -636,7 +643,6 @@ pub fn scale_img(a []f64, scale_goal f64) []f64 {
 }
 
 @[inline]
-// array 28*28 image coordinates
 fn a_coords(y int, x int, size int) int {
 	return y * size + x
 }
@@ -675,26 +681,26 @@ pub fn rotate(a []f64, alpha f64) []f64 {
 		mut twod_output := [][]f64{len: side, cap: side, init: []f64{len: side, cap: side}} // need to opti
 		for i, pixel in a {
 			if pixel > 0 {
-				x := f64(i % 28) - (f64(28)) / 2.0 + 0.5
-				y := f64(i / 28) - (f64(28)) / 2.0 + 0.5
+				x := f64(i % 28) - (f64(28) / 2.0) + 0.5
+				y := f64(i / 28) - (f64(28) / 2.0) + 0.5
 				xn := x * math.cos(angle) - y * math.sin(angle)
 				yn := x * math.sin(angle) + y * math.cos(angle)
 
 				array_coord_y := math.max(yn + side / 2 - 0.5, 0)
 				array_coord_x := math.max(xn + side / 2 - 0.5, 0)
-				twod_output[int(array_coord_y)][int(array_coord_x)] += f64(pixel * (1 - (array_coord_y - int(array_coord_y))) * (1 - (array_coord_x - int(array_coord_x))))
+				twod_output[int(array_coord_y)][int(array_coord_x)] += pixel * float_gap(array_coord_y) * float_gap(array_coord_x)
 				if twod_output[int(array_coord_y)][int(array_coord_x)] > 255 {
 					twod_output[int(array_coord_y)][int(array_coord_x)] = 255
 				}
-				twod_output[int(array_coord_y)][int(ceil(array_coord_x))] += f64(pixel * (1 - (array_coord_y - int(array_coord_y))) * (array_coord_x - int(array_coord_x)))
+				twod_output[int(array_coord_y)][int(ceil(array_coord_x))] += pixel * float_gap(array_coord_y ) * float_offset(array_coord_x)
 				if twod_output[int(array_coord_y)][int(ceil(array_coord_x))] > 255 {
 					twod_output[int(array_coord_y)][int(ceil(array_coord_x))] = 255
 				}
-				twod_output[int(ceil(array_coord_y))][int(array_coord_x)] += f64(pixel * (array_coord_y - int(array_coord_y)) * (1 - (array_coord_x - int(array_coord_x))))
+				twod_output[int(ceil(array_coord_y))][int(array_coord_x)] += pixel * float_offset(array_coord_y) * float_gap(array_coord_x)
 				if twod_output[int(ceil(array_coord_y))][int(array_coord_x)] > 255 {
 					twod_output[int(ceil(array_coord_y))][int(array_coord_x)] = 255
 				}
-				twod_output[int(ceil(array_coord_y))][int(ceil(array_coord_x))] += f64(pixel * (array_coord_y - int(array_coord_y)) * (array_coord_x - int(array_coord_x)))
+				twod_output[int(ceil(array_coord_y))][int(ceil(array_coord_x))] += pixel * float_offset(array_coord_y) * float_offset(array_coord_x)
 				if twod_output[int(ceil(array_coord_y))][int(ceil(array_coord_x))] > 255 {
 					twod_output[int(ceil(array_coord_y))][int(ceil(array_coord_x))] = 255
 				}

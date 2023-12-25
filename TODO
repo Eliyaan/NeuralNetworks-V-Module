@@ -1,11 +1,14 @@
 Needed:
-- image processing & gui to see the dataaugmented images
-- pooling layer
+- refactor rota + rota bug
+- refactor visualiser -> gui module ?
 - classifier utilities like accuracy & classifier loss
+- save title -> name-[archi]_cost_accuracy
 - train the mnist & adapt the gui
+- pooling layer
 
 
 Later:
 - Convolution layer
 - multithreading / GPU
 - option to save the costs for momentum ?
+- dataset with any type, and f64 cast on forward/backprop
