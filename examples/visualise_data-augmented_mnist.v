@@ -56,6 +56,7 @@ enum Ids {
 	noise_range_text
 	noise_probability_text
 	scale_range_text
+	rota_range_text
 }
 
 struct App {
@@ -69,7 +70,8 @@ mut:
 	offset_range int = 4
 	noise_probability int = 5
 	noise_range int = 255
-	scale_range f64 = 0.2
+	scale_range f64 = 0.1
+	rota_range int = 30
 	augment_asked bool
 }
 
@@ -119,6 +121,9 @@ fn main() {
 	app.clickables << Button{Id{}, x_buttons_offset+75, 110, buttons_shape, plus_text, green, add_scale_range}
 	app.elements << Text{Id{.scale_range_text}, x_buttons_offset+45, 110, "Scale range: ${app.scale_range}", button_description_cfg}
 
+	app.clickables << Button{Id{}, x_buttons_offset+50, 135, buttons_shape, minus_text, red, sub_rota_range}
+	app.clickables << Button{Id{}, x_buttons_offset+75, 135, buttons_shape, plus_text, green, add_rota_range}
+	app.elements << Text{Id{.rota_range_text}, x_buttons_offset+45, 135, "Rotation range: ${app.rota_range}", button_description_cfg}
 
 	app.augment_images()
     app.gg.run()
@@ -268,7 +273,8 @@ fn (mut app App) augment_images() {
 }
 
 fn (mut app App) augment(i int) {
-	app.dataset.inputs[i] = scale_img(app.base_dataset.inputs[i], rd.f64_in_range(1-app.scale_range, 1+app.scale_range) or {0})
+	app.dataset.inputs[i] = rotate(app.base_dataset.inputs[i], rd.f64_in_range(-app.rota_range, app.rota_range) or {0})
+	app.dataset.inputs[i] = scale_img(app.dataset.inputs[i], rd.f64_in_range(1-app.scale_range, 1+app.scale_range) or {0})
 	app.dataset.inputs[i] = rand_offset_image(app.dataset.inputs[i], app.offset_range)
 	app.dataset.inputs[i] = crop(app.dataset.inputs[i])
 	app.dataset.inputs[i] = rand_noise(app.dataset.inputs[i], app.noise_probability, app.noise_range)
@@ -418,6 +424,18 @@ fn add_scale_range(mut app App) {
 fn sub_scale_range(mut app App) {
 	app.scale_range = math.round_sig(app.scale_range-0.01, 2)
 	app.change_text(Id{.scale_range_text}, "Scale range: ${app.scale_range}")
+	ask_augment(mut app)
+}
+
+fn add_rota_range(mut app App) {
+	app.rota_range += 1
+	app.change_text(Id{.rota_range_text}, "Rotation range: ${app.rota_range}")
+	ask_augment(mut app)
+}
+
+fn sub_rota_range(mut app App) {
+	app.rota_range -= 1
+	app.change_text(Id{.rota_range_text}, "Rotation range: ${app.rota_range}")
 	ask_augment(mut app)
 }
 
@@ -634,18 +652,17 @@ fn float_gap(f f64) f64 {
 	return 1 - float_offset(f)
 }
 
-/*
 @[direct_array_access]
-pub fn rotate(a []f64, alpha f64, im_size int) ([]f64, int) {
+pub fn rotate(a []f64, alpha f64) []f64 {
 	if alpha != 0 {
 		angle := math.radians(alpha)
 
-		full_x := (im_size - 1) * math.cos(angle) - (im_size - 1) * math.sin(angle)
-		full_y := (im_size - 1) * math.sin(angle) + (im_size - 1) * math.cos(angle)
-		only_x_x := (im_size - 1) * math.cos(angle) // - 0*math.sin(angle)
-		only_x_y := (im_size - 1) * math.sin(angle) // + 0*math.cos(angle)
-		only_y_x := -(im_size - 1) * math.sin(angle)
-		only_y_y := (im_size - 1) * math.cos(angle)
+		full_x := (28 - 1) * math.cos(angle) - (28 - 1) * math.sin(angle)
+		full_y := (28 - 1) * math.sin(angle) + (28 - 1) * math.cos(angle)
+		only_x_x := (28 - 1) * math.cos(angle) // - 0*math.sin(angle)
+		only_x_y := (28 - 1) * math.sin(angle) // + 0*math.cos(angle)
+		only_y_x := -(28 - 1) * math.sin(angle)
+		only_y_y := (28 - 1) * math.cos(angle)
 		max_x := (max([full_x, only_x_x, only_y_x, 0]))
 		min_x := (min([full_x, only_x_x, only_y_x, 0]))
 		max_y := (max([full_y, only_x_y, only_y_y, 0]))
@@ -658,8 +675,8 @@ pub fn rotate(a []f64, alpha f64, im_size int) ([]f64, int) {
 		mut twod_output := [][]f64{len: side, cap: side, init: []f64{len: side, cap: side}} // need to opti
 		for i, pixel in a {
 			if pixel > 0 {
-				x := f64(i % im_size) - (f64(im_size)) / 2.0 + 0.5
-				y := f64(i / im_size) - (f64(im_size)) / 2.0 + 0.5
+				x := f64(i % 28) - (f64(28)) / 2.0 + 0.5
+				y := f64(i / 28) - (f64(28)) / 2.0 + 0.5
 				xn := x * math.cos(angle) - y * math.sin(angle)
 				yn := x * math.sin(angle) + y * math.cos(angle)
 
@@ -669,26 +686,26 @@ pub fn rotate(a []f64, alpha f64, im_size int) ([]f64, int) {
 				if twod_output[int(array_coord_y)][int(array_coord_x)] > 255 {
 					twod_output[int(array_coord_y)][int(array_coord_x)] = 255
 				}
-				twod_output[int(array_coord_y)][int(ceil_f(array_coord_x))] += f64(pixel * (1 - (array_coord_y - int(array_coord_y))) * (array_coord_x - int(array_coord_x)))
-				if twod_output[int(array_coord_y)][int(ceil_f(array_coord_x))] > 255 {
-					twod_output[int(array_coord_y)][int(ceil_f(array_coord_x))] = 255
+				twod_output[int(array_coord_y)][int(ceil(array_coord_x))] += f64(pixel * (1 - (array_coord_y - int(array_coord_y))) * (array_coord_x - int(array_coord_x)))
+				if twod_output[int(array_coord_y)][int(ceil(array_coord_x))] > 255 {
+					twod_output[int(array_coord_y)][int(ceil(array_coord_x))] = 255
 				}
-				twod_output[int(ceil_f(array_coord_y))][int(array_coord_x)] += f64(pixel * (array_coord_y - int(array_coord_y)) * (1 - (array_coord_x - int(array_coord_x))))
-				if twod_output[int(ceil_f(array_coord_y))][int(array_coord_x)] > 255 {
-					twod_output[int(ceil_f(array_coord_y))][int(array_coord_x)] = 255
+				twod_output[int(ceil(array_coord_y))][int(array_coord_x)] += f64(pixel * (array_coord_y - int(array_coord_y)) * (1 - (array_coord_x - int(array_coord_x))))
+				if twod_output[int(ceil(array_coord_y))][int(array_coord_x)] > 255 {
+					twod_output[int(ceil(array_coord_y))][int(array_coord_x)] = 255
 				}
-				twod_output[int(ceil_f(array_coord_y))][int(ceil_f(array_coord_x))] += f64(pixel * (array_coord_y - int(array_coord_y)) * (array_coord_x - int(array_coord_x)))
-				if twod_output[int(ceil_f(array_coord_y))][int(ceil_f(array_coord_x))] > 255 {
-					twod_output[int(ceil_f(array_coord_y))][int(ceil_f(array_coord_x))] = 255
+				twod_output[int(ceil(array_coord_y))][int(ceil(array_coord_x))] += f64(pixel * (array_coord_y - int(array_coord_y)) * (array_coord_x - int(array_coord_x)))
+				if twod_output[int(ceil(array_coord_y))][int(ceil(array_coord_x))] > 255 {
+					twod_output[int(ceil(array_coord_y))][int(ceil(array_coord_x))] = 255
 				}
 			}
 		}
 		for row in twod_output {
 			output << row
 		}
-		return output, side
+		return output
 	} else {
-		return a, im_size
+		return a
 	}
 }
 
@@ -717,17 +734,12 @@ fn min(a []f64) f64 {
 @[inline]
 fn round_to_greater(nb f64) f64 {
 	if nb >= 0 {
-		return ceil_f(math.round_sig(nb, 5))
+		return f64(ceil(math.round_sig(nb, 5)))
 	} else {
 		return f64(int(math.round_sig(nb, 5)))
 	}
 }
 
-@[inline]
-fn floor_f(nb f64) f64 {
-	return f64(int(nb))
-}
-*/
 @[inline]
 fn ceil(nb f64) int {
 	return -int(-nb)
