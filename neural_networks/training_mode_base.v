@@ -16,6 +16,10 @@ pub mut:
 	expected_outputs [][]f64
 }
 
+pub fn (dataset Dataset) clone() Dataset {
+	return Dataset{dataset.inputs.clone(), dataset.expected_outputs.clone()}
+}
+
 // [ start -> end ]
 // test_interval in epochs
 pub struct TestParams { 

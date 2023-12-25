@@ -7,7 +7,14 @@ import rand as rd
 import rand.config as rdconfig
 
 /*
-/!\ the functions are for square images and/or for this specific project
+/!\ the functions are for square images and/or for this specific project most of the time, but the core concepts are here
+*/
+
+
+/*
+TODO:
+Text struct to render nice text (and on buttons)
+Buttons with click color change, text change etc
 */
 
 const (
@@ -22,8 +29,13 @@ struct App {
 mut:
     gg    &gg.Context = unsafe { nil }
 	objects []Object
+	base_dataset nn.Dataset
 	dataset nn.Dataset
 	actual_image int
+	offset_range int = 4
+	noise_probability int = 28
+	noise_range int = 255
+	augment_asked bool
 }
 
 fn main() {
@@ -40,10 +52,18 @@ fn main() {
         sample_count: 4
 		ui_mode: true
     )
-	app.dataset = load_mnist_training(100)
+	app.base_dataset = load_mnist_training(100)
+	app.dataset = app.base_dataset.clone()
 	app.objects << Button{150, 10, "-", 20, 20, .top_right, gx.red, 5, prev_img}
 	app.objects << Button{175, 10, "+", 20, 20, .top_right, gx.green, 5, next_img}
-	augment_images(mut app.dataset.inputs)
+	app.objects << Button{205, 10, "~", 20, 20, .top_right, gx.gray, 5, ask_augment}
+	app.objects << Button{150, 35, "-", 20, 20, .top_right, gx.red, 5, sub_offset}
+	app.objects << Button{175, 35, "+", 20, 20, .top_right, gx.green, 5, add_offset}
+	app.objects << Button{150, 60, "-", 20, 20, .top_right, gx.red, 5, sub_noise_range}
+	app.objects << Button{175, 60, "+", 20, 20, .top_right, gx.green, 5, add_noise_range}
+	app.objects << Button{150, 85, "-", 20, 20, .top_right, gx.red, 5, sub_noise_probability}
+	app.objects << Button{175, 85, "+", 20, 20, .top_right, gx.green, 5, add_noise_probability}
+	app.augment_images()
     app.gg.run()
 }
 
@@ -52,6 +72,10 @@ fn on_frame(mut app App) {
     app.gg.begin()
 	app.render_image()
 	app.render_objects()
+	if app.augment_asked {
+		app.augment(app.actual_image)
+		app.augment_asked = false
+	}
     app.gg.end()
 }
 
@@ -95,19 +119,20 @@ struct Button { // refaire pour meilleur texte
 	click_func fn (mut app App) @[required]
 }
 
-fn augment_images(mut imgs [][]f64) {
-	for mut img in imgs {
-		augment(mut img)
+fn (mut app App) augment_images() {
+	for i, _ in app.dataset.inputs {
+		app.augment(i)
 	}
 }
 
-fn augment(mut img []f64) {
-
+fn (mut app App) augment(i int) {
+	app.dataset.inputs[i] = rand_offset_image(app.base_dataset.inputs[i], app.offset_range)
+	app.dataset.inputs[i] = rand_noise(app.dataset.inputs[i], app.noise_probability, app.noise_range)
 }
 
 fn (mut app App) check(mouse_x int, mouse_y int) { // need to do the relative pos
 	for obj in app.objects {
-		if mouse_x > obj.x && mouse_y > obj.y && mouse_x < obj.x + obj.width && mouse_y < obj.y + obj.height {
+		if in_range(f32(mouse_x), f32(mouse_y), obj.x, obj.y, obj.x + obj.width, obj.y + obj.height) {
 			obj.click_func(mut app)
 		}
 	}
@@ -124,6 +149,7 @@ fn next_img(mut app App) {
 	}else{
 		app.actual_image += 1
 	}
+	ask_augment(mut app)
 }
 
 fn prev_img(mut app App) {
@@ -132,6 +158,41 @@ fn prev_img(mut app App) {
 	}else{
 		app.actual_image -= 1
 	}
+	ask_augment(mut app)
+}
+
+fn ask_augment(mut app App) {
+	app.augment_asked = true
+}
+
+fn add_offset(mut app App) {
+	app.offset_range += 1
+	ask_augment(mut app)
+}
+
+fn sub_offset(mut app App) {
+	app.offset_range -= 1
+	ask_augment(mut app)
+}
+
+fn add_noise_range(mut app App) {
+	app.noise_range += 1
+	ask_augment(mut app)
+}
+
+fn sub_noise_range(mut app App) {
+	app.noise_range -= 1
+	ask_augment(mut app)
+}
+
+fn add_noise_probability(mut app App) {
+	app.noise_probability += 1
+	ask_augment(mut app)
+}
+
+fn sub_noise_probability(mut app App) {
+	app.noise_probability -= 1
+	ask_augment(mut app)
 }
 
 enum Pos {
@@ -230,27 +291,41 @@ fn get_center_of_mass(a []f64) (int, int) {
 }
 
 @[direct_array_access]
-pub fn offset_image(a []f64, offset_range int) []f64 {
+pub fn rand_offset_image(a []f64, offset_range int) []f64 {
 	mut offset_x, mut offset_y := get_center_of_mass(a)
 	im_size := int(math.sqrt(a.len))
 	if offset_range > 0 {
 		offset_x += rd.int_in_range(-offset_range, offset_range + 1) or { panic(err) }
 		offset_y += rd.int_in_range(-offset_range, offset_range + 1) or { panic(err) }
 	}
-	mut output := []f64{cap: y_goal * x_goal}
-	for l in 0 .. y_goal {
-		for c in 0 .. x_goal {
-			if offset_x + c >= 0 && offset_x + c < x_size && offset_y + l >= 0
-				&& offset_y + l < y_size && (offset_y + l) * x_size + offset_x + c < a.len {
-				output << a[(offset_y + l) * x_size + offset_x + c]
+	mut output := []f64{cap: im_size * im_size}
+	for l in 0 .. im_size {
+		for c in 0 .. im_size {
+			if in_range(offset_x + c, offset_y + l, 0, 0, im_size, im_size) {
+				output << a[(offset_y + l) * im_size + offset_x + c]
 			} else {
 				output << 0.0
-			}
-			if noise_strength > 0 {
-				output[l * x_goal + c] += f64(if (rd.int_in_range(0, 28) or { 50 }) == 0 { ((rd.int_in_range(0, m.max(0, noise_strength)) or {
-						0}) + int(output[l * x_goal + c])) % 256 } else { 0 })
 			}
 		}
 	}
 	return output
+}
+
+@[direct_array_access]
+pub fn rand_noise(a []f64, noise_probability int, noise_range int) []f64 {
+	if noise_probability > 0 && noise_range > 0 {
+		mut output := a.clone()
+		for mut elem in output {
+			if rd.int_in_range(0, noise_probability) or {1} == 0 {
+				elem += rd.f64_in_range(0, f64(noise_range)-elem) or {0.0}
+			}
+		}
+		return output
+	} else {
+		return a
+	}
+}
+
+fn in_range[T](x T, y T, x_start T, y_start T, x_end T, y_end T) bool {
+	return x >= x_start && x < x_end && y >= y_start && y < y_end
 }
