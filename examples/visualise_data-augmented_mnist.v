@@ -55,7 +55,7 @@ mut:
 	final_scale f64 = 0.75
 	noise_probability int = 15
 	noise_range int = 255
-	scale_range f64 = 0.1
+	scale_range f64 = 0.2
 	rota_range int = 30
 	final_nb_pixels int
 	augment_asked bool = true
@@ -84,7 +84,7 @@ fn main() {
 	reload_text := ggui.Text{0, 0, 0, "~", gx.TextCfg{color:theme.base, size:20, align:.center, vertical_align:.middle}}
 	button_description_cfg := gx.TextCfg{color:theme.text, size:20, align:.right, vertical_align:.top}
 
-	app.elements << ggui.Text{id(.img_label), 14*px_size, 28*px_size, match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str(), gx.TextCfg{color:theme.text, size:20, align:.center, vertical_align:.top}}
+	app.elements << ggui.Text{id(.img_label), 14*px_size, 28*px_size, nn.match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str(), gx.TextCfg{color:theme.text, size:20, align:.center, vertical_align:.top}}
 
 	app.clickables << ggui.Button{0, box_offset_x+50, box_offset_y+5, buttons_shape, minus_text, theme.red, prev_img}
 	app.clickables << ggui.Button{0, box_offset_x+75, box_offset_y+5, buttons_shape, plus_text, theme.green, next_img}
@@ -168,11 +168,14 @@ fn (mut app App) augment_images() {
 fn (mut app App) augment(i int) {
 	app.dataset.inputs[i] = app.base_dataset.inputs[i].clone()
 	app.dataset.inputs[i] = rotate(app.dataset.inputs[i], rd.f64_in_range(-app.rota_range, app.rota_range) or {0})
-	app.dataset.inputs[i] = scale_img(app.dataset.inputs[i], rd.f64_in_range(1-app.scale_range, 1+app.scale_range) or {0})
-	app.dataset.inputs[i] = rand_noise(app.dataset.inputs[i], app.noise_probability, app.noise_range)
-	app.dataset.inputs[i] = center_image(app.dataset.inputs[i])
+	mut image_side_size := ceil(math.sqrt(app.dataset.inputs[i].len))
+	app.dataset.inputs[i] = nn.scale_img(app.dataset.inputs[i], rd.f64_in_range(1-app.scale_range, 1+app.scale_range) or {0}, image_side_size, image_side_size)
+	image_side_size = ceil(math.sqrt(app.dataset.inputs[i].len))
+	app.dataset.inputs[i] = nn.rand_noise(app.dataset.inputs[i], app.noise_probability, app.noise_range)
+	app.dataset.inputs[i] = nn.center_image(app.dataset.inputs[i], image_side_size, image_side_size)
 	app.dataset.inputs[i] = crop(app.dataset.inputs[i])
-	app.dataset.inputs[i] = scale_img(app.dataset.inputs[i], app.final_scale)
+	image_side_size = ceil(math.sqrt(app.dataset.inputs[i].len))
+	app.dataset.inputs[i] = nn.scale_img(app.dataset.inputs[i], app.final_scale, image_side_size, image_side_size)
 	app.final_nb_pixels = int(math.sqrt(app.dataset.inputs[i].len))
 }
 
@@ -184,7 +187,7 @@ fn next_img(mut app ggui.Gui) {
 			app.actual_image += 1
 		}
 		app.gui.change_text(id(.img_nb_text), "Image n°${app.actual_image}")
-		app.gui.change_text(id(.img_label), match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str())
+		app.gui.change_text(id(.img_label), nn.match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str())
 
 		ask_augment(mut app)
 	}
@@ -198,7 +201,7 @@ fn prev_img(mut app ggui.Gui) {
 			app.actual_image -= 1
 		}
 		app.gui.change_text(id(.img_nb_text), "Image n°${app.actual_image}")
-		app.gui.change_text(id(.img_label), match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str())
+		app.gui.change_text(id(.img_label), nn.match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str())
 		ask_augment(mut app)
 	}
 }
@@ -310,7 +313,7 @@ fn load_mnist_training(nb_training int) nn.Dataset {
 	for i in order_array {
 		dataset.inputs << [train_images.read_bytes_at(784, i * 784 + 16).map(f64(it))]
 		dataset.expected_outputs << [
-			match_number_to_classifier_array(train_labels.read_bytes_at(1, i + 8)[0])
+			nn.match_number_to_classifier_array(train_labels.read_bytes_at(1, i + 8)[0])
 		]
 	}
 	println('Finished loading training mnist!')
@@ -326,140 +329,11 @@ fn load_mnist_test(nb_tests int) nn.Dataset {
 	for i in 0 .. nb_tests {
 		dataset.inputs << [test_images.read_bytes_at(784, i * 784 + 16).map(f64(it))]
 		dataset.expected_outputs << [
-			match_number_to_classifier_array(test_labels.read_bytes_at(1, i + 8)[0])
+			nn.match_number_to_classifier_array(test_labels.read_bytes_at(1, i + 8)[0])
 		]
 	}
 	println('Finished loading test mnist!')
 	return dataset
-}
-
-fn match_number_to_classifier_array(nb u8) []f64 {
-	return []f64{len:10, init: if index == nb {1} else {0}}
-}
-
-fn match_classifier_array_to_number(a []f64) int {
-	for i, elem in a {
-		if elem == 1.0 {
-			return i
-		}
-	}
-	panic("No corresponding number")
-}
-
-@[direct_array_access]
-fn get_center_of_mass(a []f64) (int, int) {
-	mut x := 0.0
-	mut y := 0.0
-	mut cpt := 0.0 // to divide everything by the total of values
-	im_size := int(math.sqrt(a.len))
-	for l in 0 .. im_size {
-		for c in 0 .. im_size {
-			px_value := a[l * im_size + c]
-			if px_value != 0 {
-				x += c * px_value
-				y += l * px_value
-				cpt += 1 * px_value
-			}
-		}
-	}
-	if cpt != 0 {
-		x /= cpt
-		y /= cpt
-	}
-	return int(x - 28 / 2), int(y - 28 / 2) // offset (half goal/crop image size)
-}
-
-@[direct_array_access]
-pub fn center_image(a []f64) []f64 {
-	offset_x, offset_y := get_center_of_mass(a)
-	base_im_size := ceil(math.sqrt(a.len))
-	mut output := []f64{cap: base_im_size * base_im_size}
-	for l in 0 .. base_im_size {
-		for c in 0 .. base_im_size {
-			if in_range(offset_x + c, offset_y + l, 0, 0, base_im_size, base_im_size) {
-				output << a[a_coords(offset_y + l, offset_x + c, base_im_size)]
-			} else {
-				output << 0.0
-			}
-		}
-	}
-	return output
-}
-
-@[direct_array_access]
-fn crop(a []f64) []f64 {
-	base_im_size := ceil(math.sqrt(a.len))
-	mut output := []f64{cap: 28 * 28}
-	for l in 0 .. 28 {
-		for c in 0 .. 28 {
-			if in_range(c, l, 0, 0, base_im_size, base_im_size) {
-				output << a[a_coords(l, c, base_im_size)]
-			} else {
-				output << 0.0
-			}
-		}
-	}
-	return output
-}
-
-@[direct_array_access]
-pub fn rand_noise(a []f64, noise_probability int, noise_range int) []f64 {
-	if noise_probability > 0 && noise_range > 0 {
-		mut output := a.clone()
-		for mut elem in output {
-			if rd.int_in_range(0, noise_probability) or {1} == 0 {
-				elem += rd.f64_in_range(0, f64(noise_range)-elem) or {0.0}
-			}
-		}
-		return output
-	} else {
-		return a
-	}
-}
-
-@[direct_array_access]
-pub fn scale_img(a []f64, scale_goal f64) []f64 {
-	base_side := int(math.sqrt(a.len))
-	scaled_side := ceil(f64(base_side) * scale_goal)
-	if scaled_side != base_side {
-		mut new_a := []f64{len: scaled_side * scaled_side, cap: scaled_side * scaled_side}
-		for l in 0 .. scaled_side {
-			for c in 0 .. scaled_side {
-				// Index in the new array of the current pixel
-				new_i := l * scaled_side + c
-				// needs division (for proportionality) but only if needed :
-				mut val_l := f64(l * (base_side - 1))
-				mut val_c := f64(c * (base_side - 1))
-
-				// if the division is a integer (it corresponds to an exact pixel)
-				l_is_int := int(val_l) % (scaled_side - 1) != 0
-				c_is_int := int(val_c) % (scaled_side - 1) != 0
-				// divide
-				val_l /= (scaled_side - 1)
-				val_c /= (scaled_side - 1)
-				int_val_l := int(val_l)
-				int_val_c := int(val_c)
-				// Take the right pixel values
-				if l_is_int && c_is_int {
-					new_a[new_i] = a[int(val_l) * base_side + int_val_c]
-				} else if !(l_is_int || c_is_int) {  // none of them
-					new_a[new_i] = a[a_coords(int_val_l, int_val_c, base_side)] * float_gap(val_c) * float_gap(val_l) +
-						a[a_coords(int_val_l, ceil(val_c), base_side)] * float_offset(val_c) * float_gap(val_l) +
-						a[a_coords(ceil(val_l), int_val_c, base_side)] * float_offset(val_l) * float_gap(val_c) +
-						a[a_coords(ceil(val_l), ceil(val_c), base_side)] * float_offset(val_l) * float_offset(val_c)
-				} else if l_is_int {  // exact line (not useful for squares I think but there if needed)
-					new_a[new_i] = a[a_coords(int_val_l, int_val_c, base_side)] * float_gap(val_c) +
-						a[a_coords(int_val_l, ceil(val_c), base_side)] * float_offset(val_c)
-				} else {  // exact collumn (not useful for squares I think but there if needed)
-					new_a[new_i] = a[a_coords(int_val_l, int_val_c, base_side)] * float_gap(val_l) + 
-						a[a_coords(ceil(val_l), int_val_c, base_side)] * float_offset(val_l)
-				}
-			}
-		}
-		return new_a // needs to be cropped
-	} else {
-		return a
-	}
 }
 
 @[inline]
@@ -572,6 +446,24 @@ fn round_to_greater(nb f64) f64 {
 		return f64(int(math.round_sig(nb, 5)))
 	}
 }
+
+
+@[direct_array_access]
+pub fn crop(a []f64) []f64 {
+	base_im_size := ceil(math.sqrt(a.len))
+	mut output := []f64{cap: 28 * 28}
+	for l in 0 .. 28 {
+		for c in 0 .. 28 {
+			if in_range(c, l, 0, 0, base_im_size, base_im_size) {
+				output << a[a_coords(l, c, base_im_size)]
+			} else {
+				output << 0.0
+			}
+		}
+	}
+	return output
+}
+
 
 @[inline]
 fn ceil(nb f64) int {
