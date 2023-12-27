@@ -22,15 +22,12 @@ const (
 	theme			= ggui.CatppuchinMocha{}
     bg_color    	= theme.base
 	px_size			= 4
-	x_buttons_offset= 300
-	buttons_shape	= ggui.ButtonShape{20, 20, 5, .top_right}
+	box_offset_x	= 300
+	box_offset_y	= 10
+	buttons_shape	= ggui.RoundedShape{20, 20, 5, .top_right}
 )
 
-struct Id {
-	id Ids
-}
-
-enum Ids {
+enum Id {
 	@none 	
 	img_nb_text
 	img_label
@@ -42,7 +39,7 @@ enum Ids {
 }
 
 fn id(id Id) int {
-	return int(id.id)
+	return int(id)
 }
 
 @[heap]
@@ -87,51 +84,58 @@ fn main() {
 	reload_text := ggui.Text{0, 0, 0, "~", gx.TextCfg{color:theme.base, size:20, align:.center, vertical_align:.middle}}
 	button_description_cfg := gx.TextCfg{color:theme.text, size:20, align:.right, vertical_align:.top}
 
-	app.elements << ggui.Text{id(Id{.img_label}), 14*px_size, 28*px_size, match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str(), gx.TextCfg{color:theme.text, size:20, align:.center, vertical_align:.top}}
+	app.elements << ggui.Text{id(.img_label), 14*px_size, 28*px_size, match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str(), gx.TextCfg{color:theme.text, size:20, align:.center, vertical_align:.top}}
 
-	app.clickables << ggui.Button{0, x_buttons_offset+50, 10, buttons_shape, minus_text, theme.red, prev_img}
-	app.clickables << ggui.Button{0, x_buttons_offset+75, 10, buttons_shape, plus_text, theme.green, next_img}
-	app.elements << ggui.Text{id(Id{.img_nb_text}), x_buttons_offset+45, 10, "Image n°${app.actual_image}", button_description_cfg}
+	app.clickables << ggui.Button{0, box_offset_x+50, box_offset_y+5, buttons_shape, minus_text, theme.red, prev_img}
+	app.clickables << ggui.Button{0, box_offset_x+75, box_offset_y+5, buttons_shape, plus_text, theme.green, next_img}
 
-	app.clickables << ggui.Button{0, x_buttons_offset+105, 10, buttons_shape, reload_text, theme.flamingo, ask_augment}
+	app.clickables << ggui.Button{0, box_offset_x+105, box_offset_y+5, buttons_shape, reload_text, theme.flamingo, ask_augment}
+	
+	app.clickables << ggui.Button{0, box_offset_x+50, box_offset_y+30, buttons_shape, minus_text, theme.red, sub_final_scale}
+	app.clickables << ggui.Button{0, box_offset_x+75, box_offset_y+30, buttons_shape, plus_text, theme.green, add_final_scale}
 
-	app.clickables << ggui.Button{0, x_buttons_offset+50, 35, buttons_shape, minus_text, theme.red, sub_final_scale}
-	app.clickables << ggui.Button{0, x_buttons_offset+75, 35, buttons_shape, plus_text, theme.green, add_final_scale}
-	app.elements << ggui.Text{id(Id{.final_scale_text}), x_buttons_offset+45, 35, "Final scale: ${app.final_scale}", button_description_cfg}
+	app.clickables << ggui.Button{0, box_offset_x+50, box_offset_y+55, buttons_shape, minus_text, theme.red, sub_noise_range}
+	app.clickables << ggui.Button{0, box_offset_x+75, box_offset_y+55, buttons_shape, plus_text, theme.green, add_noise_range}
 
-	app.clickables << ggui.Button{0, x_buttons_offset+50, 60, buttons_shape, minus_text, theme.red, sub_noise_range}
-	app.clickables << ggui.Button{0, x_buttons_offset+75, 60, buttons_shape, plus_text, theme.green, add_noise_range}
-	app.elements << ggui.Text{id(Id{.noise_range_text}), x_buttons_offset+45, 60, "Noise range: ${app.noise_range}", button_description_cfg}
+	app.clickables << ggui.Button{0, box_offset_x+50, box_offset_y+80, buttons_shape, minus_text, theme.red, sub_noise_probability}
+	app.clickables << ggui.Button{0, box_offset_x+75, box_offset_y+80, buttons_shape, plus_text, theme.green, add_noise_probability}
 
-	app.clickables << ggui.Button{0, x_buttons_offset+50, 85, buttons_shape, minus_text, theme.red, sub_noise_probability}
-	app.clickables << ggui.Button{0, x_buttons_offset+75, 85, buttons_shape, plus_text, theme.green, add_noise_probability}
-	app.elements << ggui.Text{id(Id{.noise_probability_text}), x_buttons_offset+45, 85, "Noise probability: ${app.noise_probability}", button_description_cfg}
+	app.clickables << ggui.Button{0, box_offset_x+50, box_offset_y+105, buttons_shape, minus_text, theme.red, sub_scale_range}
+	app.clickables << ggui.Button{0, box_offset_x+75, box_offset_y+105, buttons_shape, plus_text, theme.green, add_scale_range}
 
-	app.clickables << ggui.Button{0, x_buttons_offset+50, 110, buttons_shape, minus_text, theme.red, sub_scale_range}
-	app.clickables << ggui.Button{0, x_buttons_offset+75, 110, buttons_shape, plus_text, theme.green, add_scale_range}
-	app.elements << ggui.Text{id(Id{.scale_range_text}), x_buttons_offset+45, 110, "Scale range: ${app.scale_range}", button_description_cfg}
+	app.clickables << ggui.Button{0, box_offset_x+50, box_offset_y+130, buttons_shape, minus_text, theme.red, sub_rota_range}
+	app.clickables << ggui.Button{0, box_offset_x+75, box_offset_y+130, buttons_shape, plus_text, theme.green, add_rota_range}
 
-	app.clickables << ggui.Button{0, x_buttons_offset+50, 135, buttons_shape, minus_text, theme.red, sub_rota_range}
-	app.clickables << ggui.Button{0, x_buttons_offset+75, 135, buttons_shape, plus_text, theme.green, add_rota_range}
-	app.elements << ggui.Text{id(Id{.rota_range_text}), x_buttons_offset+45, 135, "Rotation range: ${app.rota_range}", button_description_cfg}
+	app.elements << ggui.Rect{x:150, y:10, shape:ggui.RoundedShape{280, 160, 5, .top_right}, color:theme.mantle}
+
+	app.elements << ggui.Text{id(.img_nb_text), box_offset_x+45, box_offset_y+5, "Image n°${app.actual_image}", button_description_cfg}
+
+	app.elements << ggui.Text{id(.final_scale_text), box_offset_x+45, box_offset_y+30, "Final scale: ${app.final_scale}", button_description_cfg}
+
+	app.elements << ggui.Text{id(.noise_range_text), box_offset_x+45, box_offset_y+55, "Noise range: ${app.noise_range}", button_description_cfg}
+
+	app.elements << ggui.Text{id(.noise_probability_text), box_offset_x+45, box_offset_y+80, "Noise probability: ${app.noise_probability}", button_description_cfg}
+
+	app.elements << ggui.Text{id(.scale_range_text), box_offset_x+45, box_offset_y+105, "Scale range: ${app.scale_range}", button_description_cfg}
+
+	app.elements << ggui.Text{id(.rota_range_text), box_offset_x+45, box_offset_y+130, "Rotation range: ${app.rota_range}", button_description_cfg}
 
 	app.augment_images()
     app.gg.run()
 }
 
 fn on_frame(mut app App) {
-    //Draw
-    app.gg.begin()
 	if app.augment_asked {
 		app.augment(app.actual_image)
 		app.augment_asked = false
-		mut img_label_text := app.gui.get_element_with_id(id(Id{.img_label})) or {panic(err)}
+		mut img_label_text := app.gui.get_element_with_id(id(.img_label)) or {panic(err)}
 		img_label_text.y = app.final_nb_pixels*px_size
 		img_label_text.x = img_label_text.y/2
 	}
+    //Draw
+    app.gg.begin()
+	app.gui.render()
 	app.render_image()
-	app.gui.render_clickables()
-	app.gui.render_elements()
     app.gg.end()
 }
 
@@ -179,8 +183,8 @@ fn next_img(mut app ggui.Gui) {
 		}else{
 			app.actual_image += 1
 		}
-		app.gui.change_text(id(Id{.img_nb_text}), "Image n°${app.actual_image}")
-		app.gui.change_text(id(Id{.img_label}), match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str())
+		app.gui.change_text(id(.img_nb_text), "Image n°${app.actual_image}")
+		app.gui.change_text(id(.img_label), match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str())
 
 		ask_augment(mut app)
 	}
@@ -193,8 +197,8 @@ fn prev_img(mut app ggui.Gui) {
 		}else{
 			app.actual_image -= 1
 		}
-		app.gui.change_text(id(Id{.img_nb_text}), "Image n°${app.actual_image}")
-		app.gui.change_text(id(Id{.img_label}), match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str())
+		app.gui.change_text(id(.img_nb_text), "Image n°${app.actual_image}")
+		app.gui.change_text(id(.img_label), match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str())
 		ask_augment(mut app)
 	}
 }
@@ -208,7 +212,7 @@ fn ask_augment(mut app ggui.Gui) {
 fn add_final_scale(mut app ggui.Gui) {
 	if mut app is App {
 		app.final_scale = math.round_sig(app.final_scale+0.05, 2)
-		app.gui.change_text(id(Id{.final_scale_text}), "Final scale: ${app.final_scale}")
+		app.gui.change_text(id(.final_scale_text), "Final scale: ${app.final_scale}")
 		ask_augment(mut app)
 	}
 }
@@ -216,7 +220,7 @@ fn add_final_scale(mut app ggui.Gui) {
 fn sub_final_scale(mut app ggui.Gui) {
 	if mut app is App {
 		app.final_scale = math.round_sig(app.final_scale-0.05, 2)
-		app.gui.change_text(id(Id{.final_scale_text}), "Final scale: ${app.final_scale}")
+		app.gui.change_text(id(.final_scale_text), "Final scale: ${app.final_scale}")
 		ask_augment(mut app)
 	}
 }
@@ -224,7 +228,7 @@ fn sub_final_scale(mut app ggui.Gui) {
 fn add_noise_range(mut app ggui.Gui) {
 	if mut app is App {
 		app.noise_range += 1
-		app.gui.change_text(id(Id{.noise_range_text}), "Noise range: ${app.noise_range}")
+		app.gui.change_text(id(.noise_range_text), "Noise range: ${app.noise_range}")
 		ask_augment(mut app)
 	}
 }
@@ -232,7 +236,7 @@ fn add_noise_range(mut app ggui.Gui) {
 fn sub_noise_range(mut app ggui.Gui) {
 	if mut app is App {
 		app.noise_range -= 1
-		app.gui.change_text(id(Id{.noise_range_text}), "Noise range: ${app.noise_range}")
+		app.gui.change_text(id(.noise_range_text), "Noise range: ${app.noise_range}")
 		ask_augment(mut app)
 	}
 }
@@ -240,7 +244,7 @@ fn sub_noise_range(mut app ggui.Gui) {
 fn add_noise_probability(mut app ggui.Gui) {
 	if mut app is App {
 		app.noise_probability += 1
-		app.gui.change_text(id(Id{.noise_probability_text}), "Noise probability: ${app.noise_probability}")
+		app.gui.change_text(id(.noise_probability_text), "Noise probability: ${app.noise_probability}")
 		ask_augment(mut app)
 	}
 }
@@ -248,7 +252,7 @@ fn add_noise_probability(mut app ggui.Gui) {
 fn sub_noise_probability(mut app ggui.Gui) {
 	if mut app is App {
 		app.noise_probability -= 1
-		app.gui.change_text(id(Id{.noise_probability_text}), "Noise probability: ${app.noise_probability}")
+		app.gui.change_text(id(.noise_probability_text), "Noise probability: ${app.noise_probability}")
 		ask_augment(mut app)
 	}
 }
@@ -256,7 +260,7 @@ fn sub_noise_probability(mut app ggui.Gui) {
 fn add_scale_range(mut app ggui.Gui) {
 	if mut app is App {
 		app.scale_range = math.round_sig(app.scale_range+0.01, 2)
-		app.gui.change_text(id(Id{.scale_range_text}), "Scale range: ${app.scale_range}")
+		app.gui.change_text(id(.scale_range_text), "Scale range: ${app.scale_range}")
 		ask_augment(mut app)
 	}
 }
@@ -264,7 +268,7 @@ fn add_scale_range(mut app ggui.Gui) {
 fn sub_scale_range(mut app ggui.Gui) {
 	if mut app is App {
 		app.scale_range = math.round_sig(app.scale_range-0.01, 2)
-		app.gui.change_text(id(Id{.scale_range_text}), "Scale range: ${app.scale_range}")
+		app.gui.change_text(id(.scale_range_text), "Scale range: ${app.scale_range}")
 		ask_augment(mut app)
 	}
 }
@@ -272,7 +276,7 @@ fn sub_scale_range(mut app ggui.Gui) {
 fn add_rota_range(mut app ggui.Gui) {
 	if mut app is App {
 		app.rota_range += 1
-		app.gui.change_text(id(Id{.rota_range_text}), "Rotation range: ${app.rota_range}")
+		app.gui.change_text(id(.rota_range_text), "Rotation range: ${app.rota_range}")
 		ask_augment(mut app)
 	}
 }
@@ -280,7 +284,7 @@ fn add_rota_range(mut app ggui.Gui) {
 fn sub_rota_range(mut app ggui.Gui) {
 	if mut app is App {
 		app.rota_range -= 1
-		app.gui.change_text(id(Id{.rota_range_text}), "Rotation range: ${app.rota_range}")
+		app.gui.change_text(id(.rota_range_text), "Rotation range: ${app.rota_range}")
 		ask_augment(mut app)
 	}
 }
