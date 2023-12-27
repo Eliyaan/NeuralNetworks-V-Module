@@ -10,7 +10,7 @@ pub mut:
 	shape Area
 	text Text
 	color gx.Color
-	click_func fn (mut main Gui, mut parent Gui) @[required]
+	click_func fn (mut g Gui) @[required]
 }
 
 pub fn (b Button) render(mut g Gui, x_offset f32, y_offset f32) {

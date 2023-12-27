@@ -127,7 +127,7 @@ mut:
 	x f32
 	y f32
 	shape Area
-	click_func fn (mut main Gui, mut parent Gui)
+	click_func fn (mut g Gui)
 	render(mut g Gui, x_offset f32, y_offset f32)
 }
 
