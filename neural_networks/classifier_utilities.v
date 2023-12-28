@@ -12,3 +12,13 @@ pub fn match_classifier_array_to_number(a []f64) int {
 	}
 	panic("No corresponding number")
 }
+
+pub fn match_output_array_to_number(a []f64) int {
+	mut highest := 0
+	for i, elem in a {
+		if elem > a[highest] {
+			highest = i
+		}
+	}
+	return highest
+}

@@ -1,6 +1,4 @@
 Needed:
-- classifier utilities like accuracy & classifier loss
-- save title -> name-[archi]_cost_accuracy
 - train the mnist & adapt the gui
 - pooling layer
 

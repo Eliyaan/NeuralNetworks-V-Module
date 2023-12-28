@@ -6,7 +6,9 @@ import rand
 
 pub struct NeuralNetwork {
 pub mut:
-	layers []Layer
+	layers		[]Layer
+	cost		f64
+	accuracy	f64
 }
 
 pub fn NeuralNetwork.new(seed u32) NeuralNetwork {
