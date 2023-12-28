@@ -84,12 +84,10 @@ fn main() {
 	reload_text := ggui.Text{0, 0, 0, "~", gx.TextCfg{color:theme.base, size:20, align:.center, vertical_align:.middle}}
 	button_description_cfg := gx.TextCfg{color:theme.text, size:20, align:.right, vertical_align:.top}
 
-	app.elements << ggui.Text{id(.img_label), 14*px_size, 28*px_size, nn.match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str(), gx.TextCfg{color:theme.text, size:20, align:.center, vertical_align:.top}}
+	app.clickables << ggui.Button{0, box_offset_x+105, box_offset_y+5, buttons_shape, reload_text, theme.flamingo, ask_augment}
 
 	app.clickables << ggui.Button{0, box_offset_x+50, box_offset_y+5, buttons_shape, minus_text, theme.red, prev_img}
 	app.clickables << ggui.Button{0, box_offset_x+75, box_offset_y+5, buttons_shape, plus_text, theme.green, next_img}
-
-	app.clickables << ggui.Button{0, box_offset_x+105, box_offset_y+5, buttons_shape, reload_text, theme.flamingo, ask_augment}
 	
 	app.clickables << ggui.Button{0, box_offset_x+50, box_offset_y+30, buttons_shape, minus_text, theme.red, sub_final_scale}
 	app.clickables << ggui.Button{0, box_offset_x+75, box_offset_y+30, buttons_shape, plus_text, theme.green, add_final_scale}
@@ -105,6 +103,8 @@ fn main() {
 
 	app.clickables << ggui.Button{0, box_offset_x+50, box_offset_y+130, buttons_shape, minus_text, theme.red, sub_rota_range}
 	app.clickables << ggui.Button{0, box_offset_x+75, box_offset_y+130, buttons_shape, plus_text, theme.green, add_rota_range}
+
+	app.elements << ggui.Text{id(.img_label), 14*px_size, 28*px_size, nn.match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str(), gx.TextCfg{color:theme.text, size:20, align:.center, vertical_align:.top}}
 
 	app.elements << ggui.Rect{x:150, y:10, shape:ggui.RoundedShape{280, 160, 5, .top_right}, color:theme.mantle}
 
@@ -352,6 +352,57 @@ fn float_gap(f f64) f64 {
 	return 1 - float_offset(f)
 }
 
+//@[direct_array_access]
+pub fn rotate(a []f64, alpha f64) []f64 {
+	if alpha != 0 {
+		angle := math.radians(alpha)
+		// different sizes of the sides ?
+		full_x := 28 * math.cos(angle) - 28 * math.sin(angle)
+		full_y := 28 * math.sin(angle) + 28 * math.cos(angle)
+		only_x_x := 28 * math.cos(angle) // - 0*math.sin(angle)
+		only_x_y := 28 * math.sin(angle) // + 0*math.cos(angle)
+		only_y_x := -28 * math.sin(angle)
+		only_y_y := 28 * math.cos(angle)
+		max_x := max([full_x, only_x_x, only_y_x, 0])
+		min_x := min([full_x, only_x_x, only_y_x, 0])
+		max_y := max([full_y, only_x_y, only_y_y, 0])
+		min_y := min([full_y, only_x_y, only_y_y, 0])
+		size_x := ceil(max_x - min_x + 1)
+		size_y := ceil(max_y - min_y + 1)
+
+		side := ceil(math.sqrt(size_x * size_y))
+		mut output := []f64{len: side * side}
+		for i, _ in output { 
+			x := f64(i % side) - (f64(side - 1) / 2.0)
+			y := f64(i / side) - (f64(side - 1) / 2.0)
+			xn := x * math.cos(angle) - y * math.sin(angle)
+			yn := x * math.sin(angle) + y * math.cos(angle)
+
+			array_coord_y := yn + 27.0/2.0
+			array_coord_x := xn + 27.0/2.0
+			/*
+			if bi => pixel massacre
+			*/
+			if in_range(array_coord_x, array_coord_y, 0, 0, 28, 28) {
+				elem := a_coords(int(array_coord_y), int(array_coord_x), 28)
+				elem1 := a_coords(int(array_coord_y), ceil(array_coord_x), 28)
+				elem2 := a_coords(ceil(array_coord_y), int(array_coord_x), 28)
+				elem3 := a_coords(ceil(array_coord_y), ceil(array_coord_x), 28)
+
+				output[i] = f64(int(a[elem] * float_gap(array_coord_y) * float_gap(array_coord_x) +
+							a[elem1] * float_gap(array_coord_y) * float_offset(array_coord_x) +
+							a[elem2] * float_offset(array_coord_y) * float_gap(array_coord_x) +
+							a[elem3] * float_offset(array_coord_y) * float_offset(array_coord_x)))
+			}
+		}
+		return output
+	} else {
+		return a
+	}
+}
+
+
+/*
 @[direct_array_access]
 pub fn rotate(a []f64, alpha f64) []f64 {
 	if alpha != 0 {
@@ -415,6 +466,7 @@ pub fn rotate(a []f64, alpha f64) []f64 {
 		return a
 	}
 }
+*/
 
 @[direct_array_access; inline]
 fn max(a []f64) f64 {
@@ -448,6 +500,7 @@ fn round_to_greater(nb f64) f64 {
 }
 
 
+// TODO : crop non squares
 @[direct_array_access]
 pub fn crop(a []f64) []f64 {
 	base_im_size := ceil(math.sqrt(a.len))
