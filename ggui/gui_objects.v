@@ -141,14 +141,14 @@ mut:
 fn (a Area) offset() (f32, f32) {
 	return match a.relative_pos {
 		.center {-a.width/2, -a.height/2}
-		.right {0, -a.height/2}
-		.left {-a.width, -a.height/2}
+		.left {0, -a.height/2}
+		.right {-a.width, -a.height/2}
 		.top {-a.width/2, 0}
 		.bottom {-a.width/2, a.height}
-		.top_right {0, 0}
-		.top_left {-a.width, 0}
-		.bottom_right {0, a.height}
-		.bottom_left {a.height, a.width}
+		.top_left {0, 0}
+		.top_right {-a.width, 0}
+		.bottom_left {0, a.height}
+		.bottom_right {a.height, a.width}
 	}
 }
 
@@ -160,8 +160,8 @@ pub fn (a Area) render(mut g Gui, x_offset f32, y_offset f32, color gx.Color) {
 			x_coo -= a.width/2
 			y_coo -= a.height/2
 		}
-		.right {y_coo -= a.height/2}
-		.left {
+		.left {y_coo -= a.height/2}
+		.right {
 			x_coo -= a.width
 			y_coo -= a.height/2
 		}
@@ -170,14 +170,14 @@ pub fn (a Area) render(mut g Gui, x_offset f32, y_offset f32, color gx.Color) {
 			x_coo -= a.width/2
 			y_coo += a.height
 		}
-		.top_right {}
-		.top_left {
+		.top_left {}
+		.top_right {
 			x_coo -= a.width
 		}
-		.bottom_right {
+		.bottom_left {
 			y_coo += a.height
 		}
-		.bottom_left {
+		.bottom_right {
 			y_coo += a.height
 			x_coo += a.width
 		}

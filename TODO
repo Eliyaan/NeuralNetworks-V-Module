@@ -1,7 +1,4 @@
 Needed:
-- visualiser gui + part for the things
-- refactor rota + rota bug -> rewrite ?
-- image utilities in the nn module & allow them to take rects as inputs
 - classifier utilities like accuracy & classifier loss
 - save title -> name-[archi]_cost_accuracy
 - train the mnist & adapt the gui

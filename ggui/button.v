@@ -20,23 +20,23 @@ pub fn (b Button) render(mut g Gui, x_offset f32, y_offset f32) {
 	mut text_y_offset := y_coo
 	match b.shape.relative_pos {
 		.center {}
-		.right {text_x_offset += b.shape.width/2}
-		.left {text_x_offset -= b.shape.width/2}
+		.left {text_x_offset += b.shape.width/2}
+		.right {text_x_offset -= b.shape.width/2}
 		.top {text_y_offset += b.shape.height/2}
 		.bottom {text_y_offset -= b.shape.height/2}
-		.top_right {
+		.top_left {
 			text_x_offset += b.shape.width/2
 			text_y_offset += b.shape.height/2
 		}
-		.top_left {
+		.top_right {
 			text_x_offset -= b.shape.width/2
 			text_y_offset += b.shape.height/2
 		}
-		.bottom_right {
+		.bottom_left {
 			text_x_offset += b.shape.width/2
 			text_y_offset -= b.shape.height/2
 		}
-		.bottom_left {
+		.bottom_right {
 			text_x_offset -= b.shape.width/2
 			text_y_offset -= b.shape.height/2
 		}

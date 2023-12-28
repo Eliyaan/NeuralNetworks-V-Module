@@ -7,7 +7,7 @@ const (
     win_width   	= 601
     win_height  	= 601
     theme           = ggui.CatppuchinMocha{}
-	buttons_shape	= ggui.RoundedShape{20, 20, 5, .top_right}
+	buttons_shape	= ggui.RoundedShape{20, 20, 5, .top_left}
 )
 
 enum Id {
@@ -81,7 +81,6 @@ fn on_event(e &gg.Event, mut app App){
         .mouse_up {
             match e.mouse_button{
                 .left{
-                    println("click")
 					app.gui.check_clicks(e.mouse_x, e.mouse_y)
 				}
                 else{}

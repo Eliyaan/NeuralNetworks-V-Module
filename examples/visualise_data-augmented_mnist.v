@@ -7,14 +7,6 @@ import gx
 import rand as rd
 import rand.config as rdconfig
 
-/*
-/!\ the functions are for square images and/or for this specific project most of the time, but the core concepts are here
-*/
-
-/*
-TODO:
-Buttons with click color change, text change etc
-*/
 
 const (
     win_width   	= 601
@@ -24,7 +16,7 @@ const (
 	px_size			= 4
 	box_offset_x	= 300
 	box_offset_y	= 10
-	buttons_shape	= ggui.RoundedShape{20, 20, 5, .top_right}
+	buttons_shape	= ggui.RoundedShape{20, 20, 5, .top_left}
 )
 
 enum Id {
@@ -52,7 +44,7 @@ mut:
 	base_dataset nn.Dataset
 	dataset nn.Dataset
 	actual_image int
-	final_scale f64 = 0.75
+	final_scale f64 = 0.9
 	noise_probability int = 15
 	noise_range int = 255
 	scale_range f64 = 0.2
@@ -106,7 +98,7 @@ fn main() {
 
 	app.elements << ggui.Text{id(.img_label), 14*px_size, 28*px_size, nn.match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str(), gx.TextCfg{color:theme.text, size:20, align:.center, vertical_align:.top}}
 
-	app.elements << ggui.Rect{x:150, y:10, shape:ggui.RoundedShape{280, 160, 5, .top_right}, color:theme.mantle}
+	app.elements << ggui.Rect{x:150, y:10, shape:ggui.RoundedShape{280, 160, 5, .top_left}, color:theme.mantle}
 
 	app.elements << ggui.Text{id(.img_nb_text), box_offset_x+45, box_offset_y+5, "Image n°${app.actual_image}", button_description_cfg}
 
@@ -160,21 +152,23 @@ fn on_event(e &gg.Event, mut app App){
 }
 
 fn (mut app App) augment_images() {
+	println("Start data augmentation")
 	for i, _ in app.dataset.inputs {
 		app.augment(i)
 	}
+	println("Data augmentation finished!")
 }
 
 fn (mut app App) augment(i int) {
 	app.dataset.inputs[i] = app.base_dataset.inputs[i].clone()
-	app.dataset.inputs[i] = rotate(app.dataset.inputs[i], rd.f64_in_range(-app.rota_range, app.rota_range) or {0})
-	mut image_side_size := ceil(math.sqrt(app.dataset.inputs[i].len))
+	app.dataset.inputs[i] = nn.rotate(app.dataset.inputs[i], rd.f64_in_range(-app.rota_range, app.rota_range) or {0}, 28, 28)
+	mut image_side_size := nn.ceil(math.sqrt(app.dataset.inputs[i].len))
 	app.dataset.inputs[i] = nn.scale_img(app.dataset.inputs[i], rd.f64_in_range(1-app.scale_range, 1+app.scale_range) or {0}, image_side_size, image_side_size)
-	image_side_size = ceil(math.sqrt(app.dataset.inputs[i].len))
+	image_side_size = nn.ceil(math.sqrt(app.dataset.inputs[i].len))
 	app.dataset.inputs[i] = nn.rand_noise(app.dataset.inputs[i], app.noise_probability, app.noise_range)
 	app.dataset.inputs[i] = nn.center_image(app.dataset.inputs[i], image_side_size, image_side_size)
-	app.dataset.inputs[i] = crop(app.dataset.inputs[i])
-	image_side_size = ceil(math.sqrt(app.dataset.inputs[i].len))
+	app.dataset.inputs[i] = nn.crop(app.dataset.inputs[i], image_side_size, image_side_size, 28, 28)
+	image_side_size = nn.ceil(math.sqrt(app.dataset.inputs[i].len))
 	app.dataset.inputs[i] = nn.scale_img(app.dataset.inputs[i], app.final_scale, image_side_size, image_side_size)
 	app.final_nb_pixels = int(math.sqrt(app.dataset.inputs[i].len))
 }
@@ -334,196 +328,4 @@ fn load_mnist_test(nb_tests int) nn.Dataset {
 	}
 	println('Finished loading test mnist!')
 	return dataset
-}
-
-@[inline]
-fn a_coords(y int, x int, size int) int {
-	return y * size + x
-}
-
-// the decimal part
-@[inline]
-fn float_offset(f f64) f64 {
-	return f - int(f)
-}
-
-@[inline]
-fn float_gap(f f64) f64 {
-	return 1 - float_offset(f)
-}
-
-//@[direct_array_access]
-pub fn rotate(a []f64, alpha f64) []f64 {
-	if alpha != 0 {
-		angle := math.radians(alpha)
-		// different sizes of the sides ?
-		full_x := 28 * math.cos(angle) - 28 * math.sin(angle)
-		full_y := 28 * math.sin(angle) + 28 * math.cos(angle)
-		only_x_x := 28 * math.cos(angle) // - 0*math.sin(angle)
-		only_x_y := 28 * math.sin(angle) // + 0*math.cos(angle)
-		only_y_x := -28 * math.sin(angle)
-		only_y_y := 28 * math.cos(angle)
-		max_x := max([full_x, only_x_x, only_y_x, 0])
-		min_x := min([full_x, only_x_x, only_y_x, 0])
-		max_y := max([full_y, only_x_y, only_y_y, 0])
-		min_y := min([full_y, only_x_y, only_y_y, 0])
-		size_x := ceil(max_x - min_x + 1)
-		size_y := ceil(max_y - min_y + 1)
-
-		side := ceil(math.sqrt(size_x * size_y))
-		mut output := []f64{len: side * side}
-		for i, _ in output { 
-			x := f64(i % side) - (f64(side - 1) / 2.0)
-			y := f64(i / side) - (f64(side - 1) / 2.0)
-			xn := x * math.cos(angle) - y * math.sin(angle)
-			yn := x * math.sin(angle) + y * math.cos(angle)
-
-			array_coord_y := yn + 27.0/2.0
-			array_coord_x := xn + 27.0/2.0
-			/*
-			if bi => pixel massacre
-			*/
-			if in_range(array_coord_x, array_coord_y, 0, 0, 28, 28) {
-				elem := a_coords(int(array_coord_y), int(array_coord_x), 28)
-				elem1 := a_coords(int(array_coord_y), ceil(array_coord_x), 28)
-				elem2 := a_coords(ceil(array_coord_y), int(array_coord_x), 28)
-				elem3 := a_coords(ceil(array_coord_y), ceil(array_coord_x), 28)
-
-				output[i] = f64(int(a[elem] * float_gap(array_coord_y) * float_gap(array_coord_x) +
-							a[elem1] * float_gap(array_coord_y) * float_offset(array_coord_x) +
-							a[elem2] * float_offset(array_coord_y) * float_gap(array_coord_x) +
-							a[elem3] * float_offset(array_coord_y) * float_offset(array_coord_x)))
-			}
-		}
-		return output
-	} else {
-		return a
-	}
-}
-
-
-/*
-@[direct_array_access]
-pub fn rotate(a []f64, alpha f64) []f64 {
-	if alpha != 0 {
-		angle := math.radians(alpha)
-		// different sizes of the sides ?
-		full_x := 28 * math.cos(angle) - 28 * math.sin(angle)
-		full_y := 28 * math.sin(angle) + 28 * math.cos(angle)
-		only_x_x := 28 * math.cos(angle) // - 0*math.sin(angle)
-		only_x_y := 28 * math.sin(angle) // + 0*math.cos(angle)
-		only_y_x := -28 * math.sin(angle)
-		only_y_y := 28 * math.cos(angle)
-		max_x := max([full_x, only_x_x, only_y_x, 0])
-		min_x := min([full_x, only_x_x, only_y_x, 0])
-		max_y := max([full_y, only_x_y, only_y_y, 0])
-		min_y := min([full_y, only_x_y, only_y_y, 0])
-		size_x := ceil(max_x - min_x + 1)
-		size_y := ceil(max_y - min_y + 1)
-
-		side := ceil(math.sqrt(size_x * size_y))
-		mut output := []f64{len: side * side}
-		for i, pixel in a { // start from the output to be sure no block is left alone ?
-			if pixel > 0 {
-				x := f64(i % 28) - (f64(28 - 1) / 2.0)
-				y := f64(i / 28) - (f64(28 - 1) / 2.0)
-				xn := x * math.cos(angle) - y * math.sin(angle)
-				yn := x * math.sin(angle) + y * math.cos(angle)
-
-				array_coord_y := math.max(yn + side / 2 - 0.5, 0)
-				array_coord_x := math.max(xn + side / 2 - 0.5, 0)
-				/*
-				if bi => pixel massacre
-				*/
-				elem := a_coords(int(array_coord_y), int(array_coord_x), side)
-				output[elem] += pixel * float_gap(array_coord_y) * float_gap(array_coord_x)
-				if output[elem] > 255 { 
-					print("bi")
-					output[elem] = 255
-				}
-				elem1 := a_coords(int(array_coord_y), ceil(array_coord_x), side)
-				output[elem1] += pixel * float_gap(array_coord_y) * float_offset(array_coord_x)
-				if output[elem1] > 255 {
-					print("bi")
-					output[elem1] = 255
-				}
-				elem2 := a_coords(ceil(array_coord_y), int(array_coord_x), side)
-				output[elem2] += pixel * float_offset(array_coord_y) * float_gap(array_coord_x)
-				if output[elem2] > 255 {
-					print("bi")
-					output[elem2] = 255
-				}
-				elem3 := a_coords(ceil(array_coord_y), ceil(array_coord_x), side)
-				output[elem3] += pixel * float_offset(array_coord_y) * float_offset(array_coord_x)
-				if output[elem3] > 255 {
-					print("bi")
-					output[elem3] = 255
-				}
-			}
-		}
-		return output
-	} else {
-		return a
-	}
-}
-*/
-
-@[direct_array_access; inline]
-fn max(a []f64) f64 {
-	mut highest := 0
-	for nb, val in a {
-		if val > a[highest] {
-			highest = nb
-		}
-	}
-	return a[highest]
-}
-
-@[direct_array_access; inline]
-fn min(a []f64) f64 {
-	mut highest := 0
-	for nb, val in a {
-		if val < a[highest] {
-			highest = nb
-		}
-	}
-	return a[highest]
-}
-
-@[inline]
-fn round_to_greater(nb f64) f64 {
-	if nb >= 0 {
-		return f64(ceil(math.round_sig(nb, 5)))  // the rounding is to compensate for float precision error
-	} else {
-		return f64(int(math.round_sig(nb, 5)))
-	}
-}
-
-
-// TODO : crop non squares
-@[direct_array_access]
-pub fn crop(a []f64) []f64 {
-	base_im_size := ceil(math.sqrt(a.len))
-	mut output := []f64{cap: 28 * 28}
-	for l in 0 .. 28 {
-		for c in 0 .. 28 {
-			if in_range(c, l, 0, 0, base_im_size, base_im_size) {
-				output << a[a_coords(l, c, base_im_size)]
-			} else {
-				output << 0.0
-			}
-		}
-	}
-	return output
-}
-
-
-@[inline]
-fn ceil(nb f64) int {
-	return -int(-nb)
-}
-
-
-fn in_range[T](x T, y T, x_start T, y_start T, x_end T, y_end T) bool {
-	return x >= x_start && x < x_end && y >= y_start && y < y_end
 }
