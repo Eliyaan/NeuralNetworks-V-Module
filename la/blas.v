@@ -136,8 +136,8 @@ pub fn matrix_vector_mul[T](alpha T, a &Matrix[T], u []T) []T {
 			}
 			return v
 		}
-		vblas.dgemv(.no_trans, a.m, a.n, alpha, arr_to_f64arr[T](a.data), a.m, arr_to_f64arr[T](u),
-			1, 0.0, mut v, v.len)
+		vblas.dgemv(.no_trans, a.m, a.n, alpha, arr_to_f64arr[T](a.data), a.n, arr_to_f64arr[T](u),
+			1, 0.0, mut v, 1)
 		return v
 	} $else {
 		mut v := []T{len: a.m}
@@ -168,7 +168,7 @@ pub fn matrix_tr_vector_mul[T](alpha T, a &Matrix[T], u []T) []T {
 			return v
 		}
 		vblas.dgemv(.trans, a.m, a.n, alpha, arr_to_f64arr[T](a.data), a.n, arr_to_f64arr[T](u),
-			1, 0.0, mut v, v.len)
+			1, 0.0, mut v, 1)
 		return v
 	} $else {
 		mut v := []T{len: a.n}

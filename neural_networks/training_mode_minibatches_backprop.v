@@ -28,11 +28,12 @@ fn (mut nn NeuralNetwork) train_minibatches_backprop(t_p MinibatchesBackpropTrai
 			print_batch := t_p.print_batch_interval != 0 && ((batch + 1) % t_p.print_batch_interval == 0 || batch == 0)
 			test_batch := t_p.test_params.training_batch_interval != 0 && ((batch + 1) % t_p.test_params.training_batch_interval == 0)
 			for i, input in t_p.training.inputs[batch * t_p.batch_size..(batch + 1) * t_p.batch_size] {
+				nb := batch * t_p.batch_size + i
 				output := nn.forward_propagation(input)
-				error += cost_fn(t_p.training.expected_outputs[i], output)
-				nn.backpropagation(t_p.training.expected_outputs[i], output, cost_prime)
+				error += cost_fn(t_p.training.expected_outputs[nb], output)
+				nn.backpropagation(t_p.training.expected_outputs[nb], output, cost_prime)
 				if t_p.classifier {
-					if match_output_array_to_number(output) == match_classifier_array_to_number(t_p.training.expected_outputs[i]) {
+					if match_output_array_to_number(output) == match_classifier_array_to_number(t_p.training.expected_outputs[nb]) {
 						accuracy += 1
 					}
 				}
@@ -57,9 +58,9 @@ fn (mut nn NeuralNetwork) train_minibatches_backprop(t_p MinibatchesBackpropTrai
 		epoch_accuracy /= (nb_batches*t_p.batch_size)/100
 		if print_epoch {
 			if t_p.classifier {
-				println('Epoch ${epoch + 1}/${t_p.nb_epochs}\t-\tCost : ${epoch_error}\t-\tAccuracy : ${epoch_accuracy:.2}%')
+				println('Epoch ${epoch + 1}/${t_p.nb_epochs}\t-\tAverage Cost : ${epoch_error}\t-\tAverage Accuracy : ${epoch_accuracy:.2}%')
 			} else {
-				println('Epoch ${epoch + 1}/${t_p.nb_epochs}\t-\tCost : ${epoch_error}')
+				println('Epoch ${epoch + 1}/${t_p.nb_epochs}\t-\tAverage Cost : ${epoch_error}')
 			}
 		}
 		nn.cost = epoch_error

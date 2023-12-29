@@ -89,11 +89,11 @@ pub fn (mut nn NeuralNetwork) load_model(save_name string) {
 	for _ in 0 .. nb_layers {
 		ltype := load.read_raw[LayerType]() or { panic(err) }
 		mut layer_base := layer_from_type(ltype)
-
 		match mut layer_base {
 			Dense {
 				layer_base.input_size = load.read_raw[i64]() or { panic(err) }
 				layer_base.output_size = load.read_raw[i64]() or { panic(err) }
+				println("Dense ${layer_base.input_size} - ${layer_base.output_size}")
 				matrix_size := int(layer_base.input_size * layer_base.output_size)
 				layer_base.weights = la.Matrix.raw(int(layer_base.output_size), int(layer_base.input_size),
 					[]f64{len: matrix_size, init: index - index + load.read_raw[f64]() or {
@@ -111,9 +111,11 @@ pub fn (mut nn NeuralNetwork) load_model(save_name string) {
 			}
 			Activation {
 				layer_base = Activation.new(load.read_raw[ActivationFunctions]() or { panic(err) })
+				println("Activation ${layer_base.activ_type}")
 			}
 			else {}
 		}
 		nn.add_layer(layer_base)
 	}
+	println("Finished loading the NN ${save_name}")
 }

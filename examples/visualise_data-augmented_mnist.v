@@ -44,11 +44,11 @@ mut:
 	base_dataset nn.Dataset
 	dataset nn.Dataset
 	actual_image int
-	final_scale f64 = 0.9
+	final_scale f64 = 1
 	noise_probability int = 15
 	noise_range int = 255
 	scale_range f64 = 0.2
-	rota_range int = 30
+	rota_range int = 45
 	final_nb_pixels int
 	augment_asked bool = true
 }

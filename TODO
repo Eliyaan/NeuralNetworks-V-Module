@@ -1,9 +1,10 @@
 Needed:
-- train the mnist & adapt the gui
-- pooling layer
+- adapt a gui for testing mnist
 
 
 Later:
+- classifier loss
+- pooling layer
 - Convolution layer
 - multithreading / GPU
 - option to save the costs for momentum ?

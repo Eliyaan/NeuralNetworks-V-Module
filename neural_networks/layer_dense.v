@@ -36,8 +36,8 @@ pub fn (mut d Dense) reset() { // important, call after apply grad
 
 pub fn (mut d Dense) forward(input []f64) []f64 {
 	d.input = input.clone()
-	d.output = la.vector_add(1.0, la.matrix_vector_mul(1.0, d.weights, d.input), 1.0,
-		d.bias)
+	without_bias := la.matrix_vector_mul(1.0, d.weights, d.input)
+	d.output = la.vector_add(1.0, without_bias, 1.0, d.bias)
 	return d.output
 }
 
