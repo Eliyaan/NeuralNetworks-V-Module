@@ -25,15 +25,14 @@ fn main() {
 	model.add_layer(nn.Activation.new(.leaky_relu))
 	model.add_layer(nn.Dense.new(200, 10, 0.01, 0.01))
 	model.add_layer(nn.Activation.new(.leaky_relu))
-
 		// model.load_model('')
 
-	for i in 0..10 {
+	for i in 0..30 {
 		println("Epoch n°$i")
 		training_parameters := nn.MinibatchesBackpropTrainingParams{
 			learning_rate: 0.02
 			momentum: 0.9
-			batch_size: 150
+			batch_size: 100
 			classifier: true
 			nb_epochs: 1
 			print_interval: 1
@@ -45,14 +44,13 @@ fn main() {
 				print_start: 0
 				print_end: 3
 				training_interval: 1
-				training_batch_interval: 200
+				training_batch_interval: 600
 			}
 		}
 
 		model.train(training_parameters)
+		model.save_model('saveMNIST-${model.cost}-${model.accuracy}')
 	}
-
-	model.save_model('saveMNIST-${model.cost}-${model.accuracy}')
 }
 
 @[direct_array_access]

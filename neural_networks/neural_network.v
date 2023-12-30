@@ -56,7 +56,7 @@ pub fn (mut nn NeuralNetwork) save_model(save_name string) {
 	file.write_raw(i64(nn.layers.len)) or { panic(err) }
 	for layer in nn.layers {
 		l_type := layer_type(layer)
-		file.write_raw(l_type) or { panic(err) }
+		file.write_raw(i32(l_type)) or { panic(err) }
 		match layer {
 			Dense {
 				file.write_raw(layer.input_size) or { panic(err) }
@@ -84,8 +84,9 @@ fn exit_err(message string) {
 }
 
 pub fn (mut nn NeuralNetwork) load_model(save_name string) {
-	mut load := os.open(save_name) or { exit_err("The file doesn't exist") }
+	mut load := os.open(save_name) or { exit_err("This save doesn't exist") }
 	nb_layers := load.read_raw[i64]() or { panic(err) }
+	println("$nb_layers Layers :")
 	for _ in 0 .. nb_layers {
 		ltype := load.read_raw[LayerType]() or { panic(err) }
 		mut layer_base := layer_from_type(ltype)
@@ -113,7 +114,7 @@ pub fn (mut nn NeuralNetwork) load_model(save_name string) {
 				layer_base = Activation.new(load.read_raw[ActivationFunctions]() or { panic(err) })
 				println("Activation ${layer_base.activ_type}")
 			}
-			else {}
+			else {println("Problem ?")}
 		}
 		nn.add_layer(layer_base)
 	}

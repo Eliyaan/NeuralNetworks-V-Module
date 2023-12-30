@@ -200,7 +200,7 @@ pub fn vector_vector_tr_mul[T](alpha T, u []T, v []T) &Matrix[T] {
 		}
 		mut a := []f64{len: u.len * v.len}
 		vblas.dger(m.m, m.n, alpha, arr_to_f64arr[T](u), 1, arr_to_f64arr[T](v), 1, mut
-			a, int(math.max(m.m, m.n)))
+			a, m.n)
 		return Matrix.raw(u.len, v.len, a)
 	} $else {
 		mut m := Matrix.new[T](u.len, v.len)

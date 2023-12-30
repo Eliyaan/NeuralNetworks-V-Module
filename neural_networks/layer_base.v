@@ -27,7 +27,7 @@ pub fn layer_from_type(lt LayerType) Layer {
 				activ_prime: lrelu_prime
 			} }
 	}
-	panic('Unknown LayerType value')
+	panic('Unknown LayerType value : ${lt} ${int(lt)}')
 }
 
 pub interface Layer {
