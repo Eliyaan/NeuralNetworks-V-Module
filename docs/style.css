@@ -1,0 +1,129 @@
+@font-face {
+    font-family: "JetBrainsMono";
+    src: url("webfonts/JetBrainsMono-Regular.woff2") format("woff2");
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: "JetBrainsMonoMedium";
+    src: url("webfonts/JetBrainsMono-Medium.woff2") format("woff2");
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: "JetBrainsMonoLight";
+    src: url("webfonts/JetBrainsMono-Light.woff2") format("woff2");
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: "JetBrainsMonoXLight";
+    src: url("webfonts/JetBrainsMono-ExtraLight.woff2") format("woff2");
+    font-weight: normal;
+}
+
+body {
+    font-family: 'JetBrainsMono';
+    background-color: #11111b;
+    color:#cdd6f4;
+}
+
+h1 {
+    padding-left: 0.5em;
+    font-family: "JetBrainsMonoMedium";
+    color:#89dceb;
+}
+
+h2{
+    color:#b4befe;
+}
+
+a {
+    color:#a6e3a1;
+}
+
+.sidenavbar {
+    height: 100%;
+    width: 230px;
+    position: fixed;
+    z-index: 1;
+    top: 0;
+    left: 0;
+    background-color: #181825;
+    overflow-x: hidden;
+    padding-top: 2em;
+    padding-left: 1.5em
+}
+
+.sidelist {
+    width: 220px;
+    position: fixed;
+    z-index: 1;
+    top: 0;
+    right: 0;
+    overflow-x: hidden;
+    margin-top: 5em;
+    padding-top: 1em;
+    padding-bottom: 1em;
+    padding-left: 1em;
+    border: solid;
+    border-width: 0.1em;
+    border-color: #f9e2af;
+    border-top-left-radius: 1em;
+    border-bottom-left-radius: 1em;
+}
+
+.sidelist a {
+    color:#f9e2af;
+    display: block;
+    text-decoration: none;
+}
+
+.sidelist a:hover {
+    text-decoration: underline;
+}
+
+.main {
+    margin-left: 280px; /* Same as the width of the sidenav */
+    font-size: 20px; /* Increased text to enable scrolling */
+    padding: 0px 10px;
+    padding-right:13em;
+}
+
+.sidenavbar a {
+    padding-left: 0.5em;
+    text-decoration: none;
+    font-size: 18px;
+    color: #a6adc8;
+    display: block;
+}
+
+.sidenavbar a:hover {
+    color: #94e2d5;
+}
+
+i {
+    font-style: normal;
+    font-family: "JetBrainsMonoXLight";
+    background-color:#313244;
+    padding: 0em 0.5em 0em 0.5em;
+    border-radius: 0.99em;
+}
+
+.part {
+    font-family: "JetBrainsMonoLight";
+    font-size: 0.8em;
+    margin-top: 2em;
+    padding: 0.01em 1em 0.1em 1em;
+    border-radius: 1.0em;
+    background-color: #1e1e2e;
+}
+
+.snippet {
+    white-space: pre;
+    font-style: normal;
+    font-family: "JetBrainsMonoXLight";
+    background-color:#313244;
+    padding: 0em 0em 0em 1em;
+    border-radius: 0.8em;
+}

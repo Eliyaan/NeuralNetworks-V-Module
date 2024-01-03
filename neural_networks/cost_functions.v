@@ -18,7 +18,7 @@ pub fn mse(y_true []f64, y_pred []f64) f64 { // mean squared error
 	for elem in not_squared_error {
 		mean += elem * elem
 	}
-	return mean / f64(not_squared_error.len)
+	return mean
 }
 
 pub fn mse_prime(y_true []f64, y_pred []f64) []f64 {

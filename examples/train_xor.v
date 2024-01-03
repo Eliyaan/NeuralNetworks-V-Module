@@ -27,7 +27,7 @@ fn main() {
 
 	training_parameters := nn.BackpropTrainingParams{
 		learning_rate: 0.37
-		momentum: 0.5
+		momentum: 0.9
 		nb_epochs: 300
 		print_interval: 25
 		cost_function: .mse // mean squared error
