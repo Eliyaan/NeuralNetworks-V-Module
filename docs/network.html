@@ -11,6 +11,11 @@
 <div class="sidenavbar">
     <a href="index.html">Home Page</a>
     <a href="network.html">XOR Neural Network</a>
+    <p>Layers</p>
+    <a href="layer_dense.html">Dense Layer</a>
+    <a href="layer_activation.html">Activation Layer</a>
+    <p></p>
+    <a href="activation_functions.html">Activation functions</a>
 </div>
 
 <div class="sidelist">
@@ -48,9 +53,11 @@ fn main() {
     <p>
         Then we add the layers that we want our network to have.
         We need our network to have 2 inputs and 1 output to match the XOR gate.
-        So we will first add a Dense layer with 2 inputs and 3 outputs, 3 is arbitrary but works well.
+        So we will first add a <a href="layer_dense.html">Dense layer</a> with 2 inputs and 3 outputs, 3 is arbitrary but works well.
         The two numbers after the number of inputs/outputs is the range for the initialisation of random weights and biases.
-        Then an Activation layer, the Dense and Activation layers are complementary so we will add one per Dense layer.
+    </p>
+    <p>
+        Then an <a href="layer_activation.html">Activation layer</a>, the Dense and Activation layers are complementary so we will add one Activation per Dense layer.
         The activation function that we will use for this layer is leaky relu, as it is convenient.
         We add a second Dense layer with 3 input and 1 output and the Activation layer that goes with it.
     </p>
@@ -64,9 +71,13 @@ model.add_layer(nn.Activation.new(.leaky_relu))
         Then we need to create the parametters for the training.
         The learning rate, momentum, number of epochs are found by trial and error and these work well.
         The cost function that we will use is the Mean Squared Error (MSE).
+    </p>
+    <p>
         We then add the dataset that the network will use for it's training.
         And same for the testing, in a real example the test data is unseen during the training to be able to see how well the networks does in an unseen situation
         but as we have only 4 different possible inputs we can not show unseen data to the network so we will use the same data.
+    </p>
+    <p>
         The neural newtork will print it's performance every <i>print_interval</i> epochs.
         For the test parameters, every <i>training_interval</i> epochs it will run the test dataset and print the results from the <i>print_start</i>th element of the test dataset to the <i>print_end</i>th one.
     </p>

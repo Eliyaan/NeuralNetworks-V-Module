@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8">
+    <title>Activation layer</title>
+    <link href="style.css" rel="stylesheet">
+</head>
+
+<body>
+<div class="sidenavbar">
+    <a href="index.html">Home Page</a>
+    <a href="network.html">XOR Neural Network</a>
+    <p>Layers</p>
+    <a href="layer_dense.html">Dense Layer</a>
+    <a href="layer_activation.html">Activation Layer</a>
+</div>
+
+<div class="sidelist">
+    <a href="#What">What is it</a>
+    <a href="#How">How to create it</a>
+</div>
+
+<div class="main">
+    <h1>Layers > Activation</h1>
+    <div class="part">
+    <h2 id="What">What is it</h2>
+    <p>
+        The Activation layer takes all the inputs and applies the activation function on each one.
+    </p>
+    <p>
+        It allows the network to learn non-linear functions, so without an Activation layer the network would only be able to learn linear functions.
+        So it's an important part of the network.
+    </div>
+    <div class="part">
+    <h2 id="How">How to create an Activation layer</h2>
+    <p>
+        To create a layer we first need a neural network to create the layer in, as seen in the <a href="network.html">XOR example</a>.
+    </p>
+    <p>
+        We can then call the <i>add_layer</i> method on the neural network and create the layer that we want as the parameter for the function.
+        In our case we are going to create an Activation layer.
+    </p>
+    <p>
+        We only need one parameter, it is the activation function we chose for this layer.
+        A commonly used one is the leaky relu function, as the derivative is easy to compute and the derivative does not fades out as for a sigmoid for example.
+        Other activation functions can be found in <a href="activation_functions.html">here</a>.
+    </p>
+    <p class="snippet">
+model.add_layer(nn.Activation.new(.leaky_relu))
+    </p>
+    </div>
+</div>
+</body>
+
+</html> 

@@ -98,6 +98,13 @@ a {
     display: block;
 }
 
+.sidenavbar p{
+    margin-bottom: 0em;
+    text-decoration: none;
+    font-size: 18px;
+    color: #a6adc8;
+}
+
 .sidenavbar a:hover {
     color: #94e2d5;
 }
@@ -105,7 +112,7 @@ a {
 i {
     font-style: normal;
     font-family: "JetBrainsMonoXLight";
-    background-color:#313244;
+    background-color:#45475a;
     padding: 0em 0.5em 0em 0.5em;
     border-radius: 0.99em;
 }

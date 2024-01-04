@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8">
+    <title>Dense layer</title>
+    <link href="style.css" rel="stylesheet">
+</head>
+
+<body>
+<div class="sidenavbar">
+    <a href="index.html">Home Page</a>
+    <a href="network.html">XOR Neural Network</a>
+    <p>Layers</p>
+    <a href="layer_dense.html">Dense Layer</a>
+    <a href="layer_activation.html">Activation Layer</a>
+</div>
+
+<div class="sidelist">
+    <a href="#What">What is it</a>
+    <a href="#How">How to create it</a>
+</div>
+
+<div class="main">
+    <h1>Layers > Dense</h1>
+    <div class="part">
+    <h2 id="What">What is it</h2>
+    <p>
+        A neural network is made out of layers. The dense layer is also called the fully connected layer or just known as a 'normal' layer.
+        It is composed of weights connecting each input with every output, and then it adds the biases to each output.
+    </p>
+    <p>
+        The Dense layer is complementary with the <a href="layer_activation.html">Activation layer</a> as the dense layer is the part that will train and improve and the activation layer 
+        produces non-linearity or said in another way: it allows the network to learn many more things.
+    </p>
+    </div>
+    <div class="part">
+    <h2 id="How">How to create a Dense layer</h2>
+    <p>
+        To create a layer we first need a neural network to create the layer in, as seen in the <a href="network.html">XOR example</a>.
+    </p>
+    <p>
+        We can then call the <i>add_layer</i> method on the neural network and create the layer that we want as the parameter for the function.
+        In our case we are going to create a Dense layer.
+    </p>
+    <p>
+        The first two arguments are for the number of inputs and the number of outputs of the layer, because as said earlier each input is connected with every output and there is a bias for each output.
+        The third ad fourth arguments are the range for initialisation of weights and biases respectively. In this example for weights, they can be initialized between -0.7 to 0.7.
+    </p>
+    <p class="snippet">
+model.add_layer(nn.Dense.new(2, 3, 0.7, 0.65))
+    </p>
+    </div>
+</div>
+</body>
+
+</html> 
