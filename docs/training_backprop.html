@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8">
+    <title>Backpropagation</title>
+    <link href="style.css" rel="stylesheet">
+</head>
+
+<body>
+<div class="sidenavbar">
+    <a href="index.html">Home Page</a>
+    <a href="network.html">XOR Neural Network</a>
+    <p>Layers</p>
+    <a href="layer_dense.html">Dense Layer</a>
+    <a href="layer_activation.html">Activation Layer</a>
+    <p></p>
+    <a href="activation_functions.html">Activation functions</a>
+    <a href="cost_functions.html">Cost functions</a>
+    <p>Training modes</p>
+    <a href="training_backprop.html">Backpropagation</a>
+    <a href="training_minibatched_backprop.html">Minibatched backprop</a>
+</div>
+
+<div class="sidelist">
+    <a href="#What">What is it</a>
+    <a href="#Params">Parameters</a>
+</div>
+
+<div class="main">
+    <h1>Training > Backpropagation</h1>
+    <div class="part">
+    <h2 id="What">What is it</h2>
+    <p>
+        Backpropagation is a commonly used training algorithm for neural networks.
+    </p>
+    </div>
+    <div class="part">
+    <h2 id="Params">Parameters</h2>
+    <p>
+        We need to specify different parameters to be able to make the neural network train successfully.
+    </p>
+    <p>
+        The <i>learning_rate</i> is a factor that controls the speed of the adjustements of the weights and biases. If it is high the training can be faster but it can overshoot too.
+        If it is low the learning will take more time but can be more precise and get closer to the solution more safely.
+    </p>
+    <p>
+        The <i>momentum</i> is a factor that controls how much of the precedent adjustement is applied with the new adjustement to the weights and biases.
+        It allows the network to converge a lot faster in a lot of cases as the modification will get more and more momentum towards the solution and less towards noise from the data.
+    </p>
+    <p>
+        The <i>nb_epochs</i> is how many epochs the learning will last. An epoch is finished when the neural network has seen all the dataset one time.
+        It will apply the modifications calculated with backpropagation on each item of the dataset at the end of each epoch.
+    </p>
+    <p>
+        <i>classifier</i> tells the training algorithm if it needs to keep track of the accuracy of the classification and other convenient things for classifiers.
+    </p>
+    <p>
+        The neural newtork will print it's performance every <i>print_interval</i> epochs.
+    </p>
+    <p>
+        The <i>cost_function</i> is the cost function that you choose for this training.
+    </p>
+    <p>
+        <i>training</i> and <i>test</i> are the dataset that are used respectively for the training and  the tests.
+    </p>
+    <p>
+        <i>test_params</i> allows finer control over frequency of the tests and what is displayed during the tests.
+    </p>
+    <p class="snippet">
+struct BackpropTrainingParams {
+    learning_rate             f64
+    momentum                  f64
+    nb_epochs                 int
+    classifier                bool
+    print_interval            int
+    cost_function             CostFunctions
+    training                  Dataset
+    test                      Dataset
+    test_params               TestParams
+}
+    </p>
+    </div>
+</div>
+</body>
+
+</html> 

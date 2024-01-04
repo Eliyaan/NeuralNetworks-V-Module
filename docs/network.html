@@ -16,6 +16,10 @@
     <a href="layer_activation.html">Activation Layer</a>
     <p></p>
     <a href="activation_functions.html">Activation functions</a>
+    <a href="cost_functions.html">Cost functions</a>
+    <p>Training modes</p>
+    <a href="training_backprop.html">Backpropagation</a>
+    <a href="training_minibatched_backprop.html">Minibatched backprop</a>
 </div>
 
 <div class="sidelist">
@@ -58,7 +62,7 @@ fn main() {
     </p>
     <p>
         Then an <a href="layer_activation.html">Activation layer</a>, the Dense and Activation layers are complementary so we will add one Activation per Dense layer.
-        The activation function that we will use for this layer is leaky relu, as it is convenient.
+        The <a href="activation_functions.html">Activation function</a> that we will use for this layer is leaky relu, as it is convenient.
         We add a second Dense layer with 3 input and 1 output and the Activation layer that goes with it.
     </p>
     <p class="snippet">
@@ -70,7 +74,7 @@ model.add_layer(nn.Activation.new(.leaky_relu))
     <p>
         Then we need to create the parametters for the training.
         The learning rate, momentum, number of epochs are found by trial and error and these work well.
-        The cost function that we will use is the Mean Squared Error (MSE).
+        The <a href="cost_functions.html">Cost function</a> that we will use is the Mean Squared Error (MSE).
     </p>
     <p>
         We then add the dataset that the network will use for it's training.

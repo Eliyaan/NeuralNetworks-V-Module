@@ -9,9 +9,9 @@ pub struct MinibatchesBackpropTrainingParams {
 	print_interval            int
 	print_batch_interval      int
 	cost_function             CostFunctions
-	training        Dataset
-	test 			Dataset
-	test_params 	TestParams
+	training        		  Dataset
+	test 					  Dataset
+	test_params 			  TestParams
 }
 
 fn (mut nn NeuralNetwork) train_minibatches_backprop(t_p MinibatchesBackpropTrainingParams) {

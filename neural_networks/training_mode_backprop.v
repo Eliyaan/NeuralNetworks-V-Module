@@ -5,12 +5,12 @@ pub struct BackpropTrainingParams {
 	learning_rate             f64
 	momentum                  f64
 	nb_epochs                 int
-	classifier		bool
+	classifier				  bool
 	print_interval            int
 	cost_function             CostFunctions
-	training        Dataset
-	test 			Dataset
-	test_params 	TestParams
+	training        		  Dataset
+	test 					  Dataset
+	test_params 			  TestParams
 }
 
 fn (mut nn NeuralNetwork) train_backprop(t_p BackpropTrainingParams) {
