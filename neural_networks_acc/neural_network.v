@@ -88,8 +88,8 @@ pub fn (mut nn NeuralNetwork) load_model(save_name string) {
 	nb_layers := load.read_raw[i64]() or { panic(err) }
 	println("$nb_layers Layers :")
 	for _ in 0 .. nb_layers {
-		ltype := load.read_raw[LayerType]() or { panic(err) }
-		mut layer_base := layer_from_type(ltype)
+		ltype := load.read_raw[i32]() or { panic(err) }
+		mut layer_base := layer_from_type(unsafe{LayerType(ltype)})
 		match mut layer_base {
 			Dense {
 				layer_base.input_size = load.read_raw[i64]() or { panic(err) }
