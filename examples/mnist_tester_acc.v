@@ -1,4 +1,4 @@
-import neural_networks as nn
+import neural_networks_acc as nn
 import gg
 import gx
 import ggui
