@@ -3,6 +3,7 @@ import math
 import os
 import rand
 import rand.config as rdconfig
+
 /*
  If you get a lot of errors you probably need to run :
 
@@ -56,8 +57,8 @@ fn main() {
 @[direct_array_access]
 fn load_mnist_training(nb_training int) nn.Dataset {
 	println('Loading training mnist...')
-	train_labels := os.open('mnist\\train-labels-idx1-ubyte') or { panic(err) }
-	train_images := os.open('mnist\\train-images-idx3-ubyte') or { panic(err) }
+	train_labels := os.open('mnist/train-labels-idx1-ubyte') or { panic(err) }
+	train_images := os.open('mnist/train-images-idx3-ubyte') or { panic(err) }
 	mut dataset := nn.Dataset{[][]f64{}, [][]f64{}}
 	mut order_array := []u64{len:nb_training, init:u64(index)}
 	rand.shuffle(mut order_array, rdconfig.ShuffleConfigStruct{}) or {panic(err)}
@@ -75,8 +76,8 @@ fn load_mnist_training(nb_training int) nn.Dataset {
 @[direct_array_access]
 fn load_mnist_test(nb_tests int) nn.Dataset {
 	println('Loading test mnist...')
-	test_labels := os.open('mnist\\t10k-labels-idx1-ubyte') or { panic(err) }
-	test_images := os.open('mnist\\t10k-images-idx3-ubyte') or { panic(err) }
+	test_labels := os.open('mnist/t10k-labels-idx1-ubyte') or { panic(err) }
+	test_images := os.open('mnist/t10k-images-idx3-ubyte') or { panic(err) }
 	mut dataset := nn.Dataset{[][]f64{}, [][]f64{}}
 	for i in 0 .. nb_tests {
 		dataset.inputs << [test_images.read_bytes_at(784, i * 784 + 16).map(f64(it))]
