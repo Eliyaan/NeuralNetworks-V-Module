@@ -51,6 +51,19 @@ pub fn (mut nn NeuralNetwork) apply_gradient_descent(nb_elems_seen int, lr f64, 
 	}
 }
 
+pub fn (nn NeuralNetwork) mutate(range f64) NeuralNetwork {
+	mut new_nn := NeuralNetwork{layers: nn.layers.clone()}
+	for mut l in new_nn.layers {
+		if mut l is Dense {
+			for mut b in l.bias {
+				b += rand.f64_in_range(-range, range) or {panic(err)}
+			}
+			la.matrix_add(mut l.weights, 1, rand_matrix(l.weights.m, l.weights.n, range), 1, l.weights)
+		}
+	}
+	return new_nn
+}
+
 pub fn (mut nn NeuralNetwork) save_model(save_name string) {
 	mut file := os.create(save_name) or { panic(err) }
 	file.write_raw(i64(nn.layers.len)) or { panic(err) }
