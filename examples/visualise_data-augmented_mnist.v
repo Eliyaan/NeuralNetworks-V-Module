@@ -165,8 +165,8 @@ fn (mut app App) augment(i int) {
 	mut image_side_size := nn.ceil(math.sqrt(app.dataset.inputs[i].len))
 	app.dataset.inputs[i] = nn.scale_img(app.dataset.inputs[i], rd.f64_in_range(1-app.scale_range, 1+app.scale_range) or {0}, image_side_size, image_side_size)
 	image_side_size = nn.ceil(math.sqrt(app.dataset.inputs[i].len))
-	app.dataset.inputs[i] = nn.rand_noise(app.dataset.inputs[i], app.noise_probability, app.noise_range)
 	app.dataset.inputs[i] = nn.center_image(app.dataset.inputs[i], image_side_size, image_side_size)
+	app.dataset.inputs[i] = nn.rand_noise(app.dataset.inputs[i], app.noise_probability, app.noise_range)
 	app.dataset.inputs[i] = nn.crop(app.dataset.inputs[i], image_side_size, image_side_size, 28, 28)
 	image_side_size = nn.ceil(math.sqrt(app.dataset.inputs[i].len))
 	app.dataset.inputs[i] = nn.scale_img(app.dataset.inputs[i], app.final_scale, image_side_size, image_side_size)
@@ -299,8 +299,8 @@ fn (mut app App) render_image() {
 @[direct_array_access]
 fn load_mnist_training(nb_training int) nn.Dataset {
 	println('Loading training mnist...')
-	train_labels := os.open('mnist\\train-labels-idx1-ubyte') or { panic(err) }
-	train_images := os.open('mnist\\train-images-idx3-ubyte') or { panic(err) }
+	train_labels := os.open('mnist/train-labels-idx1-ubyte') or { panic(err) }
+	train_images := os.open('mnist/train-images-idx3-ubyte') or { panic(err) }
 	mut dataset := nn.Dataset{[][]f64{}, [][]f64{}}
 	mut order_array := []u64{len:nb_training, init:u64(index)}
 	rd.shuffle(mut order_array, rdconfig.ShuffleConfigStruct{}) or {panic(err)}
@@ -317,8 +317,8 @@ fn load_mnist_training(nb_training int) nn.Dataset {
 @[direct_array_access]
 fn load_mnist_test(nb_tests int) nn.Dataset {
 	println('Loading test mnist...')
-	test_labels := os.open('mnist\\t10k-labels-idx1-ubyte') or { panic(err) }
-	test_images := os.open('mnist\\t10k-images-idx3-ubyte') or { panic(err) }
+	test_labels := os.open('mnist/t10k-labels-idx1-ubyte') or { panic(err) }
+	test_images := os.open('mnist/t10k-images-idx3-ubyte') or { panic(err) }
 	mut dataset := nn.Dataset{[][]f64{}, [][]f64{}}
 	for i in 0 .. nb_tests {
 		dataset.inputs << [test_images.read_bytes_at(784, i * 784 + 16).map(f64(it))]

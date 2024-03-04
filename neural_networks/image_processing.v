@@ -37,7 +37,7 @@ pub fn get_center_of_mass(a []f64, x_size int, y_size int) (int, int) {
 		x /= cpt
 		y /= cpt
 	}
-	return int(x - 28 / 2), int(y - 28 / 2) // offset (half goal/crop image size)
+	return int(x - x_size / 2), int(y - x_size / 2) // offset (half goal/crop image size)
 }
 
 @[direct_array_access]
@@ -160,8 +160,8 @@ pub fn in_range[T](x T, y T, x_start T, y_start T, x_end T, y_end T) bool {
 }
 
 @[inline]
-pub fn ceil(nb f64) int {
-	return -int(-nb)
+pub fn ceil(nb f64) int {  // it is not a ceil....
+	return int(math.ceil(nb))
 }
 
 @[inline]
@@ -199,8 +199,8 @@ fn min(a []f64) f64 {
 @[direct_array_access]
 pub fn crop(a []f64, x_base int, y_base int, x_goal int, y_goal int) []f64 {
 	mut output := []f64{cap: y_goal * x_goal}
-	for l in 0 .. y_goal {
-		for c in 0 .. x_goal {
+	for l in (y_base - y_goal)/2 .. (y_base - y_goal)/2 + y_goal {
+		for c in (x_base - x_goal)/2 .. (x_base - x_goal)/2 + x_goal {
 			if in_range(c, l, 0, 0, x_base, y_base) {
 				output << a[a_coords(l, c, x_base)]
 			} else {
