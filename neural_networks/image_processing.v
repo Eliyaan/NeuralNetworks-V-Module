@@ -131,7 +131,7 @@ pub fn rotate(a []f64, alpha f64, base_x int, base_y int) []f64 {
 			array_coord_y := yn + f64(base_y-1)/2.0
 			array_coord_x := xn + f64(base_x-1)/2.0
 
-			if in_range(array_coord_x, array_coord_y, 0, 0, base_x, base_y) {
+			if in_range(ceil(array_coord_x), ceil(array_coord_y), 0, 0, base_x, base_y) {
 				elem := a_coords(int(array_coord_y), int(array_coord_x), base_x)
 				elem1 := a_coords(int(array_coord_y), ceil(array_coord_x), base_x)
 				elem2 := a_coords(ceil(array_coord_y), int(array_coord_x), base_x)
