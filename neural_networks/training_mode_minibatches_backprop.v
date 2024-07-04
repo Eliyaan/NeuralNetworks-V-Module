@@ -1,6 +1,7 @@
 module neural_networks
 
 pub struct MinibatchesBackpropTrainingParams {
+pub:
 	learning_rate             f64
 	momentum                  f64
 	batch_size                int = 1

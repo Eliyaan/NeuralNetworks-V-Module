@@ -24,6 +24,7 @@ pub fn (dataset Dataset) clone() Dataset {
 // [ start -> end ]
 // test_interval in epochs
 pub struct TestParams { 
+pub:
 	print_start int
 	print_end 	int
 	training_interval 	int

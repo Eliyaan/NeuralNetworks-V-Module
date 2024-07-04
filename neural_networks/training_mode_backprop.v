@@ -2,6 +2,7 @@ module neural_networks
 
 // An epoch is when the nn has seen the entire dataset
 pub struct BackpropTrainingParams {
+pub:
 	learning_rate             f64
 	momentum                  f64
 	nb_epochs                 int

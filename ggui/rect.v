@@ -2,7 +2,7 @@ module ggui
 import gx
 
 pub struct Rect {
-mut:
+pub mut:
 	id int
 	x f32
 	y f32
