@@ -1,6 +1,5 @@
 import neural_networks as nn
 import gg
-import gx
 import ggui
 import math
 
@@ -57,8 +56,8 @@ fn main() {
     )
 	app.model.load_model(path)
 
-	erase_text := ggui.Text{0, 0, 0, "~", gx.TextCfg{color:theme.base, size:20, align:.center, vertical_align:.middle}}
-	text_cfg := gx.TextCfg{color:theme.text, size:20, align:.left, vertical_align:.top}
+	erase_text := ggui.Text{0, 0, 0, "~", gg.TextCfg{color:theme.base, size:20, align:.center, vertical_align:.middle}}
+	text_cfg := gg.TextCfg{color:theme.text, size:20, align:.left, vertical_align:.top}
 
 	app.clickables << ggui.Button{0, 280, 30, buttons_shape, erase_text, theme.flamingo, erase}
 	
@@ -75,7 +74,7 @@ fn main() {
 	app.elements << ggui.Text{id(.text_8), 125+45, 10+210, "8 : 00.00%", text_cfg}
 	app.elements << ggui.Text{id(.text_9), 125+45, 10+235, "9 : 00.00%", text_cfg}
 
-	app.elements << ggui.Text{id(.prediction), 14*px_size, 28*px_size, "-", gx.TextCfg{color:theme.text, size:40, align:.center, vertical_align:.top}}
+	app.elements << ggui.Text{id(.prediction), 14*px_size, 28*px_size, "-", gg.TextCfg{color:theme.text, size:40, align:.center, vertical_align:.top}}
     
     app.gg.run()
 }

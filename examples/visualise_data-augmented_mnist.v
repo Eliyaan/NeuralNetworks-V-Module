@@ -3,7 +3,6 @@ import ggui
 import os
 import math
 import gg
-import gx
 import rand as rd
 import rand.config as rdconfig
 
@@ -71,10 +70,10 @@ fn main() {
 	app.base_dataset = load_mnist_training(100)
 	app.dataset = app.base_dataset.clone()
 
-	plus_text := ggui.Text{0, 0, 0, "+", gx.TextCfg{color:theme.base, size:20, align:.center, vertical_align:.middle}}
-	minus_text := ggui.Text{0, 0, 0, "-", gx.TextCfg{color:theme.base, size:20, align:.center, vertical_align:.middle}}
-	reload_text := ggui.Text{0, 0, 0, "~", gx.TextCfg{color:theme.base, size:20, align:.center, vertical_align:.middle}}
-	button_description_cfg := gx.TextCfg{color:theme.text, size:20, align:.right, vertical_align:.top}
+	plus_text := ggui.Text{0, 0, 0, "+", gg.TextCfg{color:theme.base, size:20, align:.center, vertical_align:.middle}}
+	minus_text := ggui.Text{0, 0, 0, "-", gg.TextCfg{color:theme.base, size:20, align:.center, vertical_align:.middle}}
+	reload_text := ggui.Text{0, 0, 0, "~", gg.TextCfg{color:theme.base, size:20, align:.center, vertical_align:.middle}}
+	button_description_cfg := gg.TextCfg{color:theme.text, size:20, align:.right, vertical_align:.top}
 
 	app.clickables << ggui.Button{0, box_offset_x+105, box_offset_y+5, buttons_shape, reload_text, theme.flamingo, ask_augment}
 
@@ -96,7 +95,7 @@ fn main() {
 	app.clickables << ggui.Button{0, box_offset_x+50, box_offset_y+130, buttons_shape, minus_text, theme.red, sub_rota_range}
 	app.clickables << ggui.Button{0, box_offset_x+75, box_offset_y+130, buttons_shape, plus_text, theme.green, add_rota_range}
 
-	app.elements << ggui.Text{id(.img_label), 14*px_size, 28*px_size, nn.match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str(), gx.TextCfg{color:theme.text, size:20, align:.center, vertical_align:.top}}
+	app.elements << ggui.Text{id(.img_label), 14*px_size, 28*px_size, nn.match_classifier_array_to_number(app.dataset.expected_outputs[app.actual_image]).str(), gg.TextCfg{color:theme.text, size:20, align:.center, vertical_align:.top}}
 
 	app.elements << ggui.Rect{x:150, y:10, shape:ggui.RoundedShape{280, 160, 5, .top_left}, color:theme.mantle}
 
@@ -291,7 +290,7 @@ fn (mut app App) render_image() {
 	for y in 0..img_size {
 		for x in 0..img_size {
 			px := u8(app.dataset.inputs[app.actual_image][y*img_size+x])
-			app.gg.draw_rect_filled(f32(x*px_size), f32(y*px_size), px_size, px_size, gx.Color{px,px,px,255})
+			app.gg.draw_rect_filled(f32(x*px_size), f32(y*px_size), px_size, px_size, gg.Color{px,px,px,255})
 		}
 	}
 }

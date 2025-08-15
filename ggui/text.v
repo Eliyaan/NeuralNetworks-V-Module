@@ -1,5 +1,5 @@
 module ggui
-import gx
+import gg
 
 @[heap]
 pub struct Text {
@@ -8,7 +8,7 @@ pub mut:
 	x f32
 	y f32
 	text string
-	cfg gx.TextCfg
+	cfg gg.TextCfg
 }
 
 pub fn (t Text) render(mut g Gui, x_offset f32, y_offset f32) {

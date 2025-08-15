@@ -1,5 +1,5 @@
 module ggui
-import gx
+import gg
 
 @[heap]
 pub struct Button {
@@ -9,7 +9,7 @@ pub mut:
 	y f32
 	shape Area
 	text Text
-	color gx.Color
+	color gg.Color
 	click_func fn (mut g Gui) @[required]
 }
 

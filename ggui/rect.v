@@ -1,5 +1,5 @@
 module ggui
-import gx
+import gg
 
 pub struct Rect {
 pub mut:
@@ -7,7 +7,7 @@ pub mut:
 	x f32
 	y f32
 	shape Area
-	color gx.Color
+	color gg.Color
 }
 
 fn (r Rect) render(mut g Gui, x_offset f32, y_offset f32) {

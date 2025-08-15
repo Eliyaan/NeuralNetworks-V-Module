@@ -1,6 +1,5 @@
 import ggui
 import gg
-import gx
 
 
 const (
@@ -46,9 +45,9 @@ fn main() {
         sample_count: 4
 		ui_mode: true
     )
-	plus_text := ggui.Text{0, 0, 0, "+", gx.TextCfg{color:theme.base, size:20, align:.center, vertical_align:.middle}}
-	minus_text := ggui.Text{0, 0, 0, "-", gx.TextCfg{color:theme.base, size:20, align:.center, vertical_align:.middle}}
-	text_cfg := gx.TextCfg{color:theme.text, size:20, align:.right, vertical_align:.top}
+	plus_text := ggui.Text{0, 0, 0, "+", gg.TextCfg{color:theme.base, size:20, align:.center, vertical_align:.middle}}
+	minus_text := ggui.Text{0, 0, 0, "-", gg.TextCfg{color:theme.base, size:20, align:.center, vertical_align:.middle}}
+	text_cfg := gg.TextCfg{color:theme.text, size:20, align:.right, vertical_align:.top}
 
 	app.clickables << ggui.Button{0, 300+50, 10, buttons_shape, minus_text, theme.red, prev_img}
 	app.clickables << ggui.Button{0, 300+75, 10, buttons_shape, plus_text, theme.green, next_img}
